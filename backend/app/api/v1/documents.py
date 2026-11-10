@@ -21,6 +21,7 @@ from app.schemas.document import (
     DocumentUpdate
 )
 from app.services.document_processor import document_processor
+from app.services.ingestion_pipeline import ingestion_pipeline
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -39,34 +40,47 @@ def validate_file(file: UploadFile) -> None:
     # Note: File size check is done during upload
 
 
-async def process_document_task(document_id: int, file_path: str, db: AsyncSession):
-    """Background task to process uploaded document"""
+async def process_document_task(document_id: int, file_path: str, user_id: int, db: AsyncSession):
+    """Background task to process uploaded document and generate embeddings"""
     try:
-        logger.info(f"Processing document {document_id}")
+        logger.info(f"Processing document {document_id} through ingestion pipeline")
         
-        # Process the PDF
-        processed_data = document_processor.process_document(file_path)
+        # Run through complete ingestion pipeline (PDF → Text → Chunks → Embeddings → Vector Store)
+        result = await ingestion_pipeline.process_document(
+            file_path=file_path,
+            document_id=str(document_id),
+            user_id=str(user_id),
+            db=db
+        )
         
         # Update document in database
-        result = await db.execute(
+        doc_result = await db.execute(
             select(Document).where(Document.id == document_id)
         )
-        document = result.scalar_one_or_none()
+        document = doc_result.scalar_one_or_none()
         
-        if document:
-            document.title = processed_data["title"]
-            document.authors = processed_data["authors"]
-            document.year = processed_data["year"]
-            document.abstract = processed_data["abstract"]
-            document.file_size = processed_data["file_size"]
-            document.page_count = processed_data["page_count"]
+        if document and result.get('success'):
+            # Update with extracted metadata
+            metadata = result.get('metadata', {})
+            document.title = metadata.get("title", document.title)
+            document.authors = metadata.get("authors", "Unknown")
+            document.year = metadata.get("year")
+            document.abstract = metadata.get("abstract")
+            document.page_count = result.get('pages_processed', 0)
+            document.file_size = Path(file_path).stat().st_size
             document.status = DocumentStatus.COMPLETED
             
             await db.commit()
-            logger.info(f"Document {document_id} processed successfully")
+            logger.info(f"✅ Document {document_id} processed: {result.get('chunks_created')} chunks created")
+        elif document:
+            # Processing failed
+            document.status = DocumentStatus.FAILED
+            document.error_message = result.get('error', 'Unknown error')
+            await db.commit()
+            logger.error(f"❌ Document {document_id} processing failed: {result.get('error')}")
         
     except Exception as e:
-        logger.error(f"Error processing document {document_id}: {e}")
+        logger.error(f"❌ Error processing document {document_id}: {e}")
         
         # Update document with error status
         result = await db.execute(
@@ -137,8 +151,8 @@ async def upload_document(
     await db.commit()
     await db.refresh(document)
     
-    # Process document in background
-    background_tasks.add_task(process_document_task, document.id, str(file_path), db)
+    # Process document in background (with embeddings)
+    background_tasks.add_task(process_document_task, document.id, str(file_path), current_user.id, db)
     
     return document
 
@@ -243,7 +257,7 @@ async def delete_document(
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Delete a document
+    Delete a document and its embeddings
     """
     result = await db.execute(
         select(Document).where(
@@ -259,6 +273,13 @@ async def delete_document(
             detail="Document not found"
         )
     
+    # Delete embeddings from vector store
+    try:
+        await ingestion_pipeline.delete_document_embeddings(str(document_id))
+        logger.info(f"🗑️  Deleted embeddings for document {document_id}")
+    except Exception as e:
+        logger.warning(f"Failed to delete embeddings: {e}")
+    
     # Delete file from disk
     try:
         file_path = Path(document.file_path)
@@ -271,4 +292,5 @@ async def delete_document(
     await db.delete(document)
     await db.commit()
     
+    logger.info(f"✅ Deleted document {document_id}")
     return None
