@@ -1,0 +1,343 @@
+# ResearchMate AI - Git Ignore File
+
+# ============================================
+# Python / Backend
+# ============================================
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# Environments
+.env
+.env.local
+.env.*.local
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# ============================================
+# Node / Frontend
+# ============================================
+
+# Dependencies
+node_modules/
+/.pnp
+.pnp.js
+
+# Testing
+/coverage
+
+# Production build
+/build
+/dist
+.next/
+out/
+
+# Misc
+.DS_Store
+*.pem
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Local env files
+.env*.local
+
+# Vercel
+.vercel
+
+# Turbo
+.turbo
+
+# ============================================
+# IDEs / Editors
+# ============================================
+
+# VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# PyCharm
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+
+# ============================================
+# Operating Systems
+# ============================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# ============================================
+# Project Specific
+# ============================================
+
+# Uploaded files
+uploads/
+*.pdf
+*.docx
+*.doc
+
+# Data files
+data/
+chroma/
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# ChromaDB
+chroma_data/
+
+# Model files
+models/
+*.pt
+*.pth
+*.onnx
+*.bin
+
+# Large files
+*.pkl
+*.pickle
+*.h5
+
+# Secrets (double-check!)
+secrets/
+*.key
+*.pem
+*.cer
+*.crt
+.env
+.env.local
+.env.production
+
+# API keys file (if exists)
+api_keys.txt
+credentials.json
+
+# Docker volumes
+postgres_data/
+redis_data/
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# ============================================
+# AI / ML Specific
+# ============================================
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Weights & Biases
+wandb/
+
+# MLflow
+mlruns/
+
+# DVC
+.dvc
+
+# ============================================
+# Documentation Build
+# ============================================
+
+# Sphinx
+docs/_build/
+docs/_static/
+docs/_templates/
+
+# MkDocs
+site/
+
+# ============================================
+# CI/CD
+# ============================================
+
+# GitHub Actions
+.github/workflows/*.log
+
+# ============================================
+# Other
+# ============================================
+
+# Compressed files
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# Package files
+*.deb
+*.rpm
+
+# Cache
+.cache/
+*.cache
+
+# Testing
+.pytest_cache/
+.coverage
+
+# Type checking
+.mypy_cache/
+.pytype/
+
+# Profiling
+*.prof
+*.lprof
+
+# ============================================
+# Keep these files (negated patterns)
+# ============================================
+
+# Keep example env files
+!.env.example
+!.env.local.example
+
+# Keep placeholder directories
+!data/.gitkeep
+!uploads/.gitkeep
+
+# Keep documentation images
+!docs/images/
+!docs/images/**
+
+# Keep sample data for demo
+!backend/sample_papers/sample.pdf
