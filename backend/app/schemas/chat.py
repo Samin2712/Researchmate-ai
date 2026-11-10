@@ -76,4 +76,5 @@ class ChatResponse(BaseModel):
     """Chat response schema"""
     session_id: int
     message: ChatMessageResponse
-    sources: List[SourceReference] = []
+    sources: List[Dict[str, Any]] = []
+    metadata: Optional[Dict[str, Any]] = None
