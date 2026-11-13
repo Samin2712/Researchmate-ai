@@ -76,8 +76,8 @@ Remember: Your answers should be trustworthy, verifiable, and helpful for academ
             filters = {}
             if user_id:
                 filters["user_id"] = user_id
-            if document_ids and len(document_ids) == 1:
-                filters["document_id"] = document_ids[0]
+            if document_ids:
+                filters["document_id"] = {'$in': [str(document_id) for document_id in document_ids]}
             
             # Search vector store
             results = await asyncio.to_thread(
@@ -88,7 +88,7 @@ Remember: Your answers should be trustworthy, verifiable, and helpful for academ
             )
             
             # Filter by similarity threshold
-            threshold = similarity_threshold or settings.SIMILARITY_THRESHOLD
+            threshold = settings.SIMILARITY_THRESHOLD if similarity_threshold is None else similarity_threshold
             filtered_results = [
                 r for r in results
                 if (1 - r['distance']) >= threshold  # Convert distance to similarity

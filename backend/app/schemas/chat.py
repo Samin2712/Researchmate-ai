@@ -1,7 +1,8 @@
 """
 Chat Pydantic schemas
 """
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+import json
 from datetime import datetime
 from typing import Optional, List, Dict, Any
 from app.models.chat import MessageRole
@@ -34,6 +35,14 @@ class ChatMessageResponse(ChatMessageBase):
     sources: Optional[List[Dict[str, Any]]] = None
     confidence_score: Optional[int] = None
     created_at: datetime
+
+    @field_validator("sources", mode="before")
+    @classmethod
+    def decode_legacy_sources(cls, value):
+        """Read conversations saved before sources were stored as JSON lists."""
+        if isinstance(value, str):
+            return json.loads(value)
+        return value
     
     class Config:
         from_attributes = True

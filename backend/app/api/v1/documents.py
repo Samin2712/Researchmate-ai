@@ -10,7 +10,7 @@ from pathlib import Path
 import uuid
 import logging
 
-from app.core.database import get_db
+from app.core.database import get_db, AsyncSessionLocal
 from app.core.security import get_current_user
 from app.core.config import settings
 from app.models.user import User
@@ -31,7 +31,7 @@ def validate_file(file: UploadFile) -> None:
     """Validate uploaded file"""
     # Check file extension
     file_ext = Path(file.filename).suffix.lower()
-    if file_ext not in settings.ALLOWED_EXTENSIONS:
+    if file_ext not in settings.allowed_extensions_list:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Only PDF files are allowed. Got: {file_ext}"
@@ -40,7 +40,13 @@ def validate_file(file: UploadFile) -> None:
     # Note: File size check is done during upload
 
 
-async def process_document_task(document_id: int, file_path: str, user_id: int, db: AsyncSession):
+async def process_document_task(document_id: int, file_path: str, user_id: int):
+    # Request sessions may close before a background task finishes.
+    async with AsyncSessionLocal() as db:
+        await _process_document(document_id, file_path, user_id, db)
+
+
+async def _process_document(document_id: int, file_path: str, user_id: int, db: AsyncSession):
     """Background task to process uploaded document and generate embeddings"""
     try:
         logger.info(f"Processing document {document_id} through ingestion pipeline")
@@ -81,6 +87,7 @@ async def process_document_task(document_id: int, file_path: str, user_id: int, 
         
     except Exception as e:
         logger.error(f"❌ Error processing document {document_id}: {e}")
+        await db.rollback()
         
         # Update document with error status
         result = await db.execute(
@@ -152,7 +159,7 @@ async def upload_document(
     await db.refresh(document)
     
     # Process document in background (with embeddings)
-    background_tasks.add_task(process_document_task, document.id, str(file_path), current_user.id, db)
+    background_tasks.add_task(process_document_task, document.id, str(file_path), current_user.id)
     
     return document
 

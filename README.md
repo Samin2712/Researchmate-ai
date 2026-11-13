@@ -1,355 +1,402 @@
-# 🎓 ResearchMate AI
+# 🤖 ResearchMate AI - AI-Powered Research Assistant
 
-> Your AI-powered research companion that transforms how students discover, understand, and synthesize academic knowledge
+## Run the full app locally
 
-[![STEM2Connect AI Hackathon 2026](https://img.shields.io/badge/STEM2Connect-AI%20Hackathon%202026-blue)](https://stem2connect-online-hackathon.devpost.com/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![React 18](https://img.shields.io/badge/react-18-blue.svg)](https://reactjs.org/)
+From this directory, run `npm run dev` (or `npm.cmd run dev` if PowerShell blocks npm).
+It prepares missing dependencies and starts the backend and frontend together.
+Use `npm run doctor` to check real connections and AI generation.
+See [one-command startup](docs/LOCAL_STARTUP.md) for credentials, first-run downloads, and database options.
 
----
+> **Intelligent Research Paper Assistant with RAG (Retrieval Augmented Generation)**
+> 
+> Upload PDFs, ask questions, get AI-powered answers with citations! 🎓
 
-## 📖 About
-
-ResearchMate AI is an intelligent research assistant built for the **STEM2Connect AI Hackathon 2026** (Scientific Research track). It addresses the critical problem of information overload and inefficient research workflows that students and early-career researchers face.
-
-### The Problem
-
-- Students spend **15+ hours per week** searching through academic papers
-- **73% of researchers** struggle to synthesize information across multiple papers
-- Expensive tools like Elsevier and Scopus are inaccessible to many students
-- Traditional search returns irrelevant results lacking context
-
-### Our Solution
-
-ResearchMate AI combines **Retrieval-Augmented Generation (RAG)**, vector search, and large language models to help users:
-
-✅ Upload and analyze research papers (PDFs)  
-✅ Ask natural language questions about their research library  
-✅ Generate literature reviews and summaries  
-✅ Discover connections between papers  
-✅ Create visual knowledge graphs  
-✅ Export formatted citations and notes
+[![Phase 2 Complete](https://img.shields.io/badge/Phase%202-Complete-success)](BUILD_PHASES.md)
+[![Docker Ready](https://img.shields.io/badge/Docker-Ready-blue)](QUICK_START.md)
+[![Free Tier](https://img.shields.io/badge/Cost-100%25%20Free-green)](https://makersuite.google.com)
 
 ---
 
-## 🎯 Key Features
+## ✨ Features
 
-### 📄 Intelligent Document Processing
-- Fast PDF upload with drag-and-drop interface
-- Automatic metadata extraction (title, authors, year, abstract)
-- Smart text chunking with semantic awareness
-- Support for complex academic paper layouts
+### 📚 Document Management
+- ✅ **PDF Upload & Processing** - Extract text from research papers
+- ✅ **Intelligent Chunking** - Split documents with context preservation
+- ✅ **Metadata Extraction** - Track titles, authors, pages
+- ✅ **Progress Tracking** - Real-time upload and processing status
 
-### 💬 AI-Powered Chat Interface
-- Natural language Q&A about your papers
-- Context-aware conversations with chat history
-- Streaming responses for real-time interaction
-- Source citations with page numbers
+### 🧠 AI-Powered Q&A (RAG)
+- ✅ **Semantic Search** - Find relevant content using embeddings
+- ✅ **Hybrid Search** - Combine semantic + keyword (BM25) search
+- ✅ **LLM Generation** - Get answers using Google Gemini or OpenAI
+- ✅ **Citation Extraction** - See exact sources with page numbers
+- ✅ **Streaming Responses** - Real-time answer generation
+- ✅ **Confidence Scores** - Know how confident the AI is
 
-### 🔍 Advanced Search & Retrieval
-- Hybrid search (semantic + keyword)
-- Cross-encoder re-ranking for precision
-- Multi-document synthesis
-- Relevance scoring and confidence metrics
+### 🔐 User Management
+- ✅ **Secure Authentication** - JWT-based auth
+- ✅ **User Registration** - Easy sign-up flow
+- ✅ **Session Management** - Persistent login
+- ✅ **Role-Based Access** - Multi-user support
 
-### 🛠️ Research Tools
-- **Automatic Summarization:** One-click paper summaries
-- **Literature Review Generator:** Multi-document synthesis
-- **Research Gap Identification:** Find unexplored areas
-- **Concept Explainer:** Break down complex ideas
-- **Citation Manager:** Export BibTeX, APA, MLA
-
-### 📊 Visualization
-- Knowledge graph of concept relationships
-- Citation network diagrams
-- Reading progress tracking
-- Research timeline
+### 🎨 Modern UI
+- ✅ **Responsive Design** - Works on desktop & mobile
+- ✅ **Real-time Updates** - Live chat interface
+- ✅ **Document Library** - Manage uploaded papers
+- ✅ **Dark Mode Ready** - Eye-friendly interface
 
 ---
 
-## 🚀 Demo
-
-**Demo Video:** [Watch on YouTube](#) *(Coming soon)*
-
-**Live Demo:** [Try ResearchMate AI](#) *(Coming soon)*
-
-### Screenshots
-
-<table>
-  <tr>
-    <td><img src="docs/images/upload.png" width="400" alt="Document Upload" /><br/><em>Document Upload</em></td>
-    <td><img src="docs/images/chat.png" width="400" alt="Chat Interface" /><br/><em>Chat Interface</em></td>
-  </tr>
-  <tr>
-    <td><img src="docs/images/library.png" width="400" alt="Document Library" /><br/><em>Document Library</em></td>
-    <td><img src="docs/images/graph.png" width="400" alt="Knowledge Graph" /><br/><em>Knowledge Graph</em></td>
-  </tr>
-</table>
-
----
-
-## 💻 Tech Stack
-
-### Frontend
-- **Framework:** React 18 with TypeScript
-- **Build Tool:** Vite
-- **Styling:** Tailwind CSS + Shadcn/ui
-- **State Management:** Zustand
-- **API Client:** React Query + Axios
-
-### Backend
-- **Framework:** FastAPI (Python 3.11+)
-- **Web Server:** Uvicorn (ASGI)
-- **Authentication:** JWT tokens
-- **Task Queue:** Celery + Redis (optional)
-
-### AI/ML Stack
-- **LLM:** OpenAI GPT-4o-mini / Anthropic Claude 3.5 Sonnet
-- **Embeddings:** sentence-transformers (all-MiniLM-L6-v2)
-- **Vector Database:** ChromaDB
-- **RAG Framework:** LangChain
-- **PDF Processing:** PyMuPDF, pdfplumber
-
-### Database
-- **Primary:** PostgreSQL (metadata storage)
-- **Vector Store:** ChromaDB (embeddings)
-- **Cache:** Redis (optional)
-
----
-
-## 📦 Installation
+## 🚀 Quick Start (5 Minutes)
 
 ### Prerequisites
+- Docker Desktop (that's it!)
+- Free Gemini API key ([get here](https://makersuite.google.com/app/apikey))
 
-- Python 3.11 or higher
-- Node.js 18 or higher
-- PostgreSQL 15+
-- Git
-
-### Quick Start
-
+### Setup
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/researchmate-ai.git
-cd researchmate-ai
+# 1. Clone repository
+git clone <your-repo-url>
+cd "STEM2Connect AI Hackathon"
 
-# Set up backend
-cd backend
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
-
-# Create .env file
+# 2. Configure environment
 cp .env.example .env
-# Edit .env and add your OpenAI API key
+# Edit .env and add your GOOGLE_API_KEY
 
-# Run database migrations
-alembic upgrade head
-
-# Start backend server
-uvicorn app.main:app --reload
-
-# In a new terminal, set up frontend
-cd ../frontend
-npm install
-
-# Create .env file
-cp .env.example .env
-
-# Start frontend dev server
-npm run dev
-```
-
-Open http://localhost:5173 in your browser!
-
-### Docker Setup (Recommended for Production)
-
-```bash
-# Build and run all services
+# 3. Start everything
 docker-compose up -d
 
-# View logs
-docker-compose logs -f
+# 4. Wait ~2 minutes for services to start
+docker-compose ps
 
-# Stop all services
-docker-compose down
+# 5. Access the app
+# Frontend: http://localhost:5173
+# API Docs: http://localhost:8000/docs
+```
+
+**That's it!** 🎉
+
+See [QUICK_START.md](QUICK_START.md) for detailed instructions.
+
+---
+
+## 🏗️ Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      React Frontend                          │
+│                    (Vite + TypeScript)                       │
+└────────────────────────┬────────────────────────────────────┘
+                         │ HTTP/WebSocket
+┌────────────────────────▼────────────────────────────────────┐
+│                   FastAPI Backend                            │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │  Authentication │ Document Upload │ Chat API         │   │
+│  └──────────────────────────────────────────────────────┘   │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │              RAG Pipeline (Phase 2)                   │   │
+│  │  • PDF Processing    • Text Chunking                 │   │
+│  │  • Embeddings        • Vector Storage                │   │
+│  │  • Semantic Search   • LLM Generation                │   │
+│  │  • Hybrid Search     • Citation Extraction           │   │
+│  └──────────────────────────────────────────────────────┘   │
+└────────────────┬──────────────┬──────────────┬─────────────┘
+                 │              │              │
+        ┌────────▼─────┐ ┌─────▼──────┐ ┌────▼─────────┐
+        │ PostgreSQL   │ │  Redis     │ │  ChromaDB    │
+        │  (User Data) │ │  (Cache)   │ │ (Embeddings) │
+        └──────────────┘ └────────────┘ └──────────────┘
+```
+
+### Technology Stack
+
+**Frontend**
+- React 18 + TypeScript
+- Vite (build tool)
+- TailwindCSS (styling)
+- React Query (data fetching)
+- Zustand (state management)
+
+**Backend**
+- FastAPI (Python 3.11+)
+- SQLAlchemy (ORM)
+- Alembic (migrations)
+- Pydantic (validation)
+
+**AI/ML**
+- Google Gemini 1.5 (LLM) - **FREE!**
+- sentence-transformers (embeddings) - **FREE!**
+- ChromaDB (vector database)
+- rank-bm25 (hybrid search)
+
+**Infrastructure**
+- Docker + Docker Compose
+- PostgreSQL 15
+- Redis 7
+- Nginx (production)
+
+---
+
+## 📖 How It Works
+
+### 1. Document Upload
+```
+User uploads PDF
+    ↓
+Extract text (PyPDF2)
+    ↓
+Split into chunks (500 tokens, 50 overlap)
+    ↓
+Generate embeddings (sentence-transformers)
+    ↓
+Store in ChromaDB vector database
+```
+
+### 2. Question Answering
+```
+User asks question
+    ↓
+Generate question embedding
+    ↓
+Semantic search in ChromaDB (top 5 results)
+    ↓
+Keyword search with BM25
+    ↓
+Combine & re-rank results
+    ↓
+Send context + question to Gemini LLM
+    ↓
+Stream AI response with citations
+```
+
+### 3. Citation Extraction
+- Extract exact text snippets from results
+- Include page numbers and relevance scores
+- Link citations to source documents
+- Display confidence levels
+
+---
+
+## 📁 Project Structure
+
+```
+STEM2Connect AI Hackathon/
+├── backend/                    # FastAPI backend
+│   ├── app/
+│   │   ├── api/v1/            # API endpoints
+│   │   │   ├── auth.py        # Authentication
+│   │   │   ├── documents.py   # Document upload
+│   │   │   └── chat.py        # Chat/Q&A
+│   │   ├── core/              # Core configuration
+│   │   │   ├── config.py      # Settings
+│   │   │   ├── database.py    # DB connection
+│   │   │   └── security.py    # Auth helpers
+│   │   ├── models/            # Database models
+│   │   ├── schemas/           # Pydantic schemas
+│   │   └── services/          # Business logic
+│   │       ├── embedder.py    # Embedding generation
+│   │       ├── chunker.py     # Text chunking
+│   │       ├── vector_store.py # ChromaDB operations
+│   │       ├── llm_service.py  # LLM integration
+│   │       ├── rag/
+│   │       │   ├── engine.py       # RAG orchestration
+│   │       │   └── hybrid_search.py # BM25 + semantic
+│   │       └── ingestion_pipeline.py # Full pipeline
+│   ├── requirements.txt       # Python dependencies
+│   ├── Dockerfile            # Backend Docker image
+│   └── test_rag.py           # RAG tests
+├── frontend/                  # React frontend
+│   ├── src/
+│   │   ├── components/       # React components
+│   │   ├── pages/            # Page components
+│   │   ├── hooks/            # Custom hooks
+│   │   ├── lib/              # Utilities
+│   │   └── App.tsx           # Main app
+│   ├── package.json          # Node dependencies
+│   └── Dockerfile            # Frontend Docker image
+├── docker-compose.yml        # Development compose
+├── docker-compose.prod.yml   # Production compose
+├── .env.example              # Environment template
+├── QUICK_START.md           # Quick start guide
+├── DOCKER_SETUP_GUIDE.md    # Docker documentation
+└── BUILD_PHASES.md          # Development phases
 ```
 
 ---
 
-## 📚 Documentation
+## 🎯 Development Phases
 
-- **[Project Plan](PROJECT_PLAN.md)** - Comprehensive hackathon project plan
-- **[Implementation Guide](IMPLEMENTATION_GUIDE.md)** - Step-by-step implementation
-- **[Technical Architecture](TECHNICAL_ARCHITECTURE.md)** - System design deep-dive
-- **[API Documentation](docs/api.md)** - API endpoints and usage
-- **[User Guide](docs/user-guide.md)** - How to use ResearchMate AI
-- **[Contributing](CONTRIBUTING.md)** - How to contribute
+| Phase | Status | Features |
+|-------|--------|----------|
+| **Phase 1** | ✅ Complete | Core setup, Auth, Document upload |
+| **Phase 2** | ✅ Complete | RAG pipeline, Embeddings, Q&A with citations |
+| **Phase 3** | 🚧 Planned | Advanced features, UI polish |
 
----
-
-## 🎓 AI Tools Attribution
-
-### Development Tools Used
-- **GitHub Copilot:** Code completion and boilerplate generation (~30% of code)
-- **ChatGPT:** Architecture planning, debugging, documentation (~10% of dev time)
-- **Claude:** Code review and documentation writing
-
-### AI Technologies Integrated
-- **OpenAI GPT-4o-mini:** Primary LLM for question answering and synthesis
-- **Anthropic Claude 3.5 Sonnet:** Alternative LLM for complex reasoning
-- **Sentence Transformers:** Document embedding (all-MiniLM-L6-v2)
-- **LangChain:** RAG orchestration framework
-- **ChromaDB:** Vector database for semantic search
-
-**Contribution Details:**  
-AI assistants helped with boilerplate code, debugging, and documentation. All core RAG logic, system architecture, and UI/UX design are original. Every piece of AI-generated code was reviewed, tested, and modified by human developers. AI tools accelerated development but all architectural decisions were human-made.
+See [BUILD_PHASES.md](BUILD_PHASES.md) for details.
 
 ---
 
-## 🏆 Hackathon Submission
+## 🧪 Testing
 
-**Event:** STEM2Connect AI Hackathon 2026  
-**Track:** Scientific Research (Primary), Education (Secondary)  
-**Team:** [Your Team Name]  
-**Submission Date:** November 21, 2026
+### Backend Tests
+```bash
+# Unit tests
+docker-compose exec backend pytest
 
-### Judging Criteria Alignment
+# RAG system test
+docker-compose exec backend python test_rag.py
 
-| Criterion | Score Weight | How We Excel |
-|-----------|--------------|--------------|
-| **Problem & Impact** | 20% | Addresses real pain point backed by research; serves underserved students |
-| **Use of AI** | 20% | Sophisticated RAG system with hybrid search, embeddings, and LLM integration |
-| **Functionality** | 20% | Fully working product with polished UI, not a prototype |
-| **Learning & Growth** | 20% | Strong technical learning journey with clear iteration |
-| **Presentation** | 20% | Professional demo video and comprehensive documentation |
+# Integration test
+docker-compose exec backend python test_rag_live.py
 
-### What We Learned
+# With coverage
+docker-compose exec backend pytest --cov=app --cov-report=html
+```
 
-1. **RAG Architecture:** Implementing production-grade retrieval-augmented generation with hybrid search and re-ranking
-2. **Vector Databases:** Working with embeddings, similarity search, and ChromaDB optimization
-3. **PDF Processing:** Handling complex academic paper layouts, equations, and multi-column text
-4. **Prompt Engineering:** Crafting effective prompts for accurate, well-sourced answers
-5. **Full-Stack Integration:** Building seamless integration between React, FastAPI, and AI services
-6. **User-Centric Design:** Iterating based on real student feedback to improve usability
+### Frontend Tests
+```bash
+# Unit tests
+docker-compose exec frontend npm test
 
-### Challenges Overcome
-
-- **Challenge 1:** Chunking complex academic papers while preserving context
-  - **Solution:** Implemented recursive splitting with semantic boundaries and smart overlap
-  
-- **Challenge 2:** Slow retrieval with large document collections
-  - **Solution:** Added hybrid search with caching and batch processing
-  
-- **Challenge 3:** Generic or incorrect AI answers
-  - **Solution:** Fine-tuned prompts, added source grounding, and implemented confidence scoring
-
-### Future Roadmap
-
-**Phase 1 (Post-Hackathon):**
-- Fine-tune embedding model on scientific papers
-- Add support for LaTeX, Word, and Excel documents
-- Implement collaborative annotation features
-
-**Phase 2 (6 months):**
-- Mobile apps (iOS/Android)
-- Advanced agentic workflows
-- Integration with Zotero, Mendeley
-- Public paper repositories
-
-**Phase 3 (12 months):**
-- University partnerships and library integration
-- Multi-language support
-- Research publication tracking
-- AI-assisted paper writing
+# E2E tests
+docker-compose exec frontend npm run test:e2e
+```
 
 ---
 
-## 📊 Impact Metrics
+## 🚀 Deployment
 
-### Technical Metrics
-- ⚡ **Document Processing:** < 30 seconds per paper
-- ⚡ **Query Response Time:** < 5 seconds
-- 🎯 **Retrieval Accuracy:** > 85% relevant chunks in top-5
-- ⭐ **Answer Quality:** 4.2/5 stars (user evaluation)
-- 📈 **System Uptime:** 99.5%
+### Development
+```bash
+docker-compose up -d
+```
 
-### User Impact
-- 🕐 **Time Savings:** 60% reduction in literature review time
-- 📚 **Papers Processed:** 150+ during beta
-- ❓ **Questions Answered:** 2,500+ queries
-- 👥 **Beta Users:** 35 active testers
-- ⭐ **User Satisfaction:** 4.5/5 stars
+### Production
+```bash
+# Update .env with production values
+cp .env.example .env.production
+
+# Build and start
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+```
+
+See [DOCKER_SETUP_GUIDE.md](DOCKER_SETUP_GUIDE.md#production-deployment) for complete guide.
+
+---
+
+## 🔧 Configuration
+
+### Environment Variables
+
+Key variables in `.env`:
+
+```bash
+# LLM Provider (choose one)
+LLM_PROVIDER=gemini              # or openai, anthropic
+GOOGLE_API_KEY=AIza...           # Your Gemini key
+GEMINI_MODEL=gemini-1.5-flash    # Model to use
+
+# Embeddings (local, free)
+EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
+
+# RAG Configuration
+CHUNK_SIZE=500                   # Tokens per chunk
+CHUNK_OVERLAP=50                 # Overlap between chunks
+TOP_K_RESULTS=5                  # Results to retrieve
+SIMILARITY_THRESHOLD=0.7         # Minimum similarity
+
+# Database
+DATABASE_URL=postgresql+asyncpg://user:pass@localhost:5432/db
+REDIS_URL=redis://localhost:6379/0
+
+# ChromaDB
+CHROMA_HOST=localhost
+CHROMA_PORT=8001
+```
+
+See [.env.example](.env.example) for all options.
+
+---
+
+## 📊 API Documentation
+
+### Interactive Docs
+- **Swagger UI**: http://localhost:8000/docs
+- **ReDoc**: http://localhost:8000/redoc
+
+### Key Endpoints
+
+```
+POST   /api/v1/auth/register      # Create account
+POST   /api/v1/auth/login          # Login
+POST   /api/v1/documents/upload    # Upload PDF
+GET    /api/v1/documents/          # List documents
+GET    /api/v1/documents/{id}      # Get document
+POST   /api/v1/chat/message        # Ask question (streaming)
+GET    /api/v1/chat/sessions       # List chat sessions
+GET    /api/v1/chat/sessions/{id}  # Get chat history
+```
+
+---
+
+## 💰 Cost Analysis
+
+### 100% Free Setup (Recommended)
+- ✅ Gemini API: **FREE** (generous limits)
+- ✅ Embeddings: **FREE** (runs locally)
+- ✅ Vector DB: **FREE** (ChromaDB local)
+- ✅ Total: **$0/month** 🎉
+
+### Paid Options (Optional)
+- OpenAI GPT-4: ~$0.03 per 1K tokens
+- Anthropic Claude: ~$0.015 per 1K tokens
+- Hosted vector DB: ~$20-100/month
+
+**Recommendation**: Start with free Gemini, upgrade if needed.
 
 ---
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
-### Development Setup
-
-```bash
-# Create a new branch
-git checkout -b feature/your-feature-name
-
-# Make your changes and commit
-git add .
-git commit -m "feat: add your feature"
-
-# Push and create a pull request
-git push origin feature/your-feature-name
-```
-
-### Code Style
-
-- **Python:** Follow PEP 8, use Black formatter
-- **TypeScript:** Follow Airbnb style guide, use Prettier
-- **Commits:** Use Conventional Commits (feat, fix, docs, etc.)
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ---
 
-## 📄 License
+## 📝 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License.
 
 ---
 
 ## 🙏 Acknowledgments
 
-- **STEM2Connect** for organizing the AI Hackathon 2026
-- **OpenAI** for GPT-4 API access
-- **Anthropic** for Claude API
-- **HuggingFace** for open-source models
-- **LangChain** community for RAG resources
-- Our **beta testers** for invaluable feedback
-- **Mentors** from the hackathon for guidance
+- Google Gemini for free LLM API
+- Hugging Face for sentence-transformers
+- ChromaDB for vector database
+- FastAPI & React communities
 
 ---
 
-## 📞 Contact
+## 📞 Support
 
-**Team:** [Your Team Name]  
-**Email:** your.email@example.com  
-**GitHub:** [@yourusername](https://github.com/yourusername)  
-**Demo:** [researchmate.ai](#)  
-**Devpost:** [devpost.com/software/researchmate-ai](#)
-
----
-
-## 🌟 Star History
-
-If you find ResearchMate AI helpful, please consider giving us a star ⭐
-
-[![Star History Chart](https://api.star-history.com/svg?repos=yourusername/researchmate-ai&type=Date)](https://star-history.com/#yourusername/researchmate-ai&Date)
+- **Documentation**: See `/docs` folder
+- **Issues**: Create GitHub issue
+- **Logs**: `docker-compose logs -f`
+- **Health Check**: http://localhost:8000/health
 
 ---
 
-<div align="center">
+## 🎉 Quick Links
 
-**Built with ❤️ for the STEM2Connect AI Hackathon 2026**
+- [Quick Start Guide](QUICK_START.md) - Get started in 5 minutes
+- [Docker Setup](DOCKER_SETUP_GUIDE.md) - Complete Docker guide
+- [Build Phases](BUILD_PHASES.md) - Development roadmap
+- [API Documentation](http://localhost:8000/docs) - Interactive API docs
+- [Get Gemini Key](https://makersuite.google.com/app/apikey) - Free API access
 
-[Website](#) • [Documentation](docs/) • [Report Bug](issues) • [Request Feature](issues)
+---
 
-</div>
+**Built with ❤️ for STEM2Connect AI Hackathon**
+
+**Version**: 2.0.0 (Phase 2 Complete)  
+**Last Updated**: November 11, 2026

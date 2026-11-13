@@ -1,7 +1,7 @@
 """
 Document processing service for PDF extraction and metadata
 """
-import fitz  # PyMuPDF
+import pymupdf as fitz  # PyMuPDF
 import pdfplumber
 from pathlib import Path
 from typing import Dict, Optional, List, Tuple

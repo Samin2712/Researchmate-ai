@@ -28,18 +28,16 @@ class VectorStore:
         """Initialize ChromaDB client and collection"""
         try:
             # Configure ChromaDB client
-            chroma_settings = ChromaSettings(
-                chroma_db_impl="duckdb+parquet",
-                persist_directory=settings.CHROMA_PERSIST_DIR,
-                anonymized_telemetry=False
-            )
-            
-            # Initialize client
-            self.client = chromadb.Client(chroma_settings)
+            chroma_settings = ChromaSettings(anonymized_telemetry=False)
+            if settings.CHROMA_MODE == 'http':
+                self.client = chromadb.HttpClient(host=settings.CHROMA_HOST, port=settings.CHROMA_PORT, settings=chroma_settings)
+            else:
+                self.client = chromadb.PersistentClient(path=settings.CHROMA_PERSIST_DIR, settings=chroma_settings)
             
             # Create or get collection
             self.collection = self.client.get_or_create_collection(
                 name="research_papers",
+                embedding_function=None,
                 metadata={
                     "hnsw:space": "cosine",
                     "hnsw:construction_ef": 100,
@@ -116,12 +114,15 @@ class VectorStore:
             # Build query parameters
             query_params = {
                 "query_embeddings": [query_embedding],
-                "n_results": top_k,
+                "n_results": min(top_k, self.collection.count()),
             }
+
+            if query_params['n_results'] == 0:
+                return []
             
             # Add filters if provided
             if filters:
-                query_params["where"] = filters
+                query_params["where"] = {'$and': [{key: value} for key, value in filters.items()]} if len(filters) > 1 else filters
             
             # Execute search
             results = self.collection.query(**query_params)

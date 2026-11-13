@@ -177,14 +177,16 @@ async def ask_question(
             document_ids=chat_request.document_ids,
             conversation_history=conversation_history[::-1]  # Reverse to chronological order
         )
+        if rag_response.get('error'):
+            raise HTTPException(status_code=502, detail='The AI provider could not answer. Check provider connectivity and try again.')
         
         # Save assistant message
         assistant_message = ChatMessage(
             session_id=session.id,
             role=MessageRole.ASSISTANT,
             content=rag_response['answer'],
-            sources=json.dumps(rag_response['sources']) if rag_response['sources'] else None,
-            confidence_score=rag_response.get('confidence')
+            sources=rag_response['sources'] or None,
+            confidence_score=round(rag_response.get('confidence', 0.0) * 100)
         )
         db.add(assistant_message)
         await db.commit()
@@ -202,6 +204,8 @@ async def ask_question(
             }
         }
     
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"❌ Error in ask_question: {e}")
         raise HTTPException(
@@ -267,7 +271,7 @@ async def stream_answer(
                 user_id=str(current_user.id),
                 document_ids=chat_request.document_ids
             ):
-                if chunk['type'] == 'answer' and not chunk.get('done', False):
+                if chunk['type'] == 'answer' and chunk.get('content'):
                     full_answer += chunk['content']
                     yield f"data: {json.dumps(chunk)}\n\n"
                 elif chunk['type'] == 'sources':
@@ -285,8 +289,8 @@ async def stream_answer(
                 session_id=session.id,
                 role=MessageRole.ASSISTANT,
                 content=full_answer,
-                sources=json.dumps(sources) if sources else None,
-                confidence_score=confidence
+                sources=sources or None,
+                confidence_score=round(confidence * 100)
             )
             db.add(assistant_message)
             await db.commit()

@@ -8,7 +8,8 @@ from abc import ABC, abstractmethod
 
 # Gemini imports
 try:
-    import google.generativeai as genai
+    from google import genai
+    from google.genai import types
     GEMINI_AVAILABLE = True
 except ImportError:
     GEMINI_AVAILABLE = False
@@ -60,75 +61,37 @@ class BaseLLMProvider(ABC):
 
 
 class GeminiProvider(BaseLLMProvider):
-    """Google Gemini LLM Provider (FREE)"""
-    
-    def __init__(self, api_key: str, model: str = "gemini-1.5-flash"):
+    """Gemini provider using Google's supported asynchronous Gen AI SDK."""
+
+    def __init__(self, api_key: str, model: str):
         if not GEMINI_AVAILABLE:
-            raise ImportError("google-generativeai not installed. Install with: pip install google-generativeai")
-        
-        genai.configure(api_key=api_key)
+            raise ImportError('google-genai is missing. Run npm run setup.')
+        self.client = genai.Client(api_key=api_key, http_options=types.HttpOptions(timeout=60000))
         self.model_name = model
-        self.model = genai.GenerativeModel(model)
-        logger.info(f"Initialized Gemini provider with model: {model}")
-    
-    async def generate(
-        self,
-        prompt: str,
-        system_prompt: str,
-        temperature: float = 0.7,
-        max_tokens: int = 2000,
-        stream: bool = False
-    ) -> str:
-        """Generate text response"""
-        try:
-            # Combine system prompt and user prompt
-            full_prompt = f"{system_prompt}\n\n{prompt}"
-            
-            generation_config = genai.GenerationConfig(
-                temperature=temperature,
-                max_output_tokens=max_tokens,
-            )
-            
-            response = self.model.generate_content(
-                full_prompt,
-                generation_config=generation_config
-            )
-            
-            return response.text
-        
-        except Exception as e:
-            logger.error(f"Gemini generation error: {e}")
-            raise
-    
-    async def stream_generate(
-        self,
-        prompt: str,
-        system_prompt: str,
-        temperature: float = 0.7,
-        max_tokens: int = 2000
-    ) -> AsyncIterator[str]:
-        """Generate streaming text response"""
-        try:
-            full_prompt = f"{system_prompt}\n\n{prompt}"
-            
-            generation_config = genai.GenerationConfig(
-                temperature=temperature,
-                max_output_tokens=max_tokens,
-            )
-            
-            response = self.model.generate_content(
-                full_prompt,
-                generation_config=generation_config,
-                stream=True
-            )
-            
-            for chunk in response:
-                if chunk.text:
-                    yield chunk.text
-        
-        except Exception as e:
-            logger.error(f"Gemini streaming error: {e}")
-            raise
+
+    async def generate(self, prompt: str, system_prompt: str, temperature: float = 0.7,
+                       max_tokens: int = 2000, stream: bool = False) -> str:
+        response = await self.client.aio.models.generate_content(
+            model=self.model_name, contents=prompt,
+            config=types.GenerateContentConfig(system_instruction=system_prompt,
+                                               temperature=temperature, max_output_tokens=max_tokens,
+                                               thinking_config=types.ThinkingConfig(thinking_budget=0) if self.model_name.startswith('gemini-2.5-flash') else None),
+        )
+        if not response.text:
+            raise RuntimeError('The model returned no text. Check the provider response and safety settings.')
+        return response.text
+
+    async def stream_generate(self, prompt: str, system_prompt: str, temperature: float = 0.7,
+                              max_tokens: int = 2000) -> AsyncIterator[str]:
+        response = await self.client.aio.models.generate_content_stream(
+            model=self.model_name, contents=prompt,
+            config=types.GenerateContentConfig(system_instruction=system_prompt,
+                                               temperature=temperature, max_output_tokens=max_tokens,
+                                               thinking_config=types.ThinkingConfig(thinking_budget=0) if self.model_name.startswith('gemini-2.5-flash') else None),
+        )
+        async for chunk in response:
+            if chunk.text:
+                yield chunk.text
 
 
 class OpenAIProvider(BaseLLMProvider):

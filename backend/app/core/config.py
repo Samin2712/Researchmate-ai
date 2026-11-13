@@ -1,13 +1,22 @@
 """
 Application Configuration
 """
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from pathlib import Path
+from typing import Literal
 from typing import Optional, List
 from functools import lru_cache
 
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables"""
+
+    model_config = SettingsConfigDict(
+        env_file=(Path(__file__).resolve().parents[3] / '.env', Path(__file__).resolve().parents[2] / '.env'),
+        env_ignore_empty=True,
+        extra='ignore',
+        case_sensitive=True,
+    )
     
     # Application
     APP_NAME: str = "ResearchMate AI"
@@ -17,11 +26,14 @@ class Settings(BaseSettings):
     API_V1_PREFIX: str = "/api/v1"
     
     # CORS
-    CORS_ORIGINS: List[str] = [
-        "http://localhost:5173",
-        "http://localhost:3000",
-        "http://127.0.0.1:5173",
-    ]
+    CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173"
+    
+    @property
+    def cors_origins_list(self) -> List[str]:
+        """Parse CORS_ORIGINS string into list"""
+        if isinstance(self.CORS_ORIGINS, str):
+            return [origin.strip() for origin in self.CORS_ORIGINS.split(",")]
+        return self.CORS_ORIGINS
     
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://researchmate:researchmate_password@localhost:5432/researchmate"
@@ -32,6 +44,7 @@ class Settings(BaseSettings):
     
     # ChromaDB
     CHROMA_HOST: str = "localhost"
+    CHROMA_MODE: Literal['persistent', 'http'] = 'persistent'
     CHROMA_PORT: int = 8001
     CHROMA_PERSIST_DIR: str = "./data/chroma"
     
@@ -43,14 +56,21 @@ class Settings(BaseSettings):
     # File Upload
     UPLOAD_DIR: str = "./uploads"
     MAX_UPLOAD_SIZE: int = 10485760  # 10MB
-    ALLOWED_EXTENSIONS: List[str] = [".pdf"]
+    ALLOWED_EXTENSIONS: str = ".pdf"
+    
+    @property
+    def allowed_extensions_list(self) -> List[str]:
+        """Parse ALLOWED_EXTENSIONS string into list"""
+        if isinstance(self.ALLOWED_EXTENSIONS, str):
+            return [ext.strip() for ext in self.ALLOWED_EXTENSIONS.split(",")]
+        return self.ALLOWED_EXTENSIONS
     
     # AI Configuration
     LLM_PROVIDER: str = "gemini"  # gemini | openai | anthropic
     
     # Google Gemini (FREE)
     GOOGLE_API_KEY: Optional[str] = None
-    GEMINI_MODEL: str = "gemini-1.5-flash"  # gemini-pro | gemini-1.5-flash | gemini-1.5-pro
+    GEMINI_MODEL: str = "gemini-2.5-flash"
     
     # OpenAI (Optional)
     OPENAI_API_KEY: Optional[str] = None
@@ -81,10 +101,6 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
     LOG_FILE: str = "logs/app.log"
     
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
-
 
 @lru_cache()
 def get_settings() -> Settings:

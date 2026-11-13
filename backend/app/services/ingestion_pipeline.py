@@ -11,7 +11,7 @@ import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services.document_processor import extract_text_from_pdf, extract_metadata_from_pdf
+from app.services.document_processor import document_processor
 from app.services.chunker import chunker, Chunk
 from app.services.embedder import embedder
 from app.services.vector_store import vector_store
@@ -68,8 +68,11 @@ class IngestionPipeline:
             # Step 1: Extract text and metadata
             await self._update_status("Extracting text from PDF...", 0.1)
             
-            pages = await asyncio.to_thread(extract_text_from_pdf, file_path)
-            metadata = await asyncio.to_thread(extract_metadata_from_pdf, file_path)
+            extracted = await asyncio.to_thread(document_processor.process_document, file_path)
+            pages = [{'page_number': number, 'text': text} for number, text in extracted['pages_text'].items()]
+            metadata = {key: extracted[key] for key in ('title', 'authors', 'year', 'abstract')}
+            metadata['title'] = metadata['title'] or Path(file_path).name
+            metadata['authors'] = metadata['authors'] or 'Unknown'
             
             if not pages:
                 raise ValueError("No text extracted from PDF")
@@ -92,6 +95,9 @@ class IngestionPipeline:
                 pages,
                 document_metadata
             )
+
+            if not chunks:
+                raise ValueError('No readable text was found. Upload a text-based PDF rather than a scanned image.')
             
             await self._update_status(f"Created {len(chunks)} chunks", 0.4)
             
@@ -136,6 +142,15 @@ class IngestionPipeline:
             
             if not success:
                 raise Exception("Failed to add documents to vector store")
+
+            # Keep relational chunks in sync with the vector index.
+            from app.models.document import Chunk as DocumentChunk
+            db.add_all([
+                DocumentChunk(document_id=int(document_id), text=chunk.text,
+                              page_number=chunk.page_number, chunk_index=index, vector_id=chunk_ids[index])
+                for index, chunk in enumerate(chunks)
+            ])
+            await db.flush()
             
             await self._update_status("Document processed successfully!", 1.0)
             

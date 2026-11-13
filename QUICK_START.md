@@ -1,471 +1,330 @@
-# ⚡ ResearchMate AI - Quick Start Guide
+# 🚀 ResearchMate AI - Quick Start Guide
 
-Get up and running in 15 minutes!
+## One-command local development
 
----
+Run **`npm run dev`** from the repository root. On restricted PowerShell installations, use
+**`npm.cmd run dev`**. This launches FastAPI and Vite using SQLite and persistent Chroma;
+Docker is not required for this mode. Run `npm run doctor` to verify the connections.
+See [local startup details](docs/LOCAL_STARTUP.md). The Docker instructions below are a separate workflow.
 
-## 🎯 Goal
-
-By the end of this guide, you'll have:
-- ✅ Backend API running on http://localhost:8000
-- ✅ Frontend app running on http://localhost:5173
-- ✅ Ability to upload a PDF and ask questions about it
+Get up and running in **5 minutes** with Docker!
 
 ---
 
-## 📋 Prerequisites Check
+## ✅ Prerequisites (2 minutes)
 
-Before starting, ensure you have:
+### 1. Install Docker Desktop
+- **Windows**: https://docs.docker.com/desktop/install/windows-install/
+- **Mac**: https://docs.docker.com/desktop/install/mac-install/
+- **Linux**: https://docs.docker.com/engine/install/
 
+**Verify installation**:
 ```bash
-# Check Python version (need 3.11+)
-python --version
-
-# Check Node.js version (need 18+)
-node --version
-
-# Check if PostgreSQL is installed
-psql --version
-
-# Check if Git is installed
-git --version
+docker --version
+docker-compose --version
 ```
 
-If anything is missing, install it first!
+### 2. Get a FREE Gemini API Key (1 minute)
+1. Visit https://makersuite.google.com/app/apikey
+2. Click "Create API Key"
+3. Copy your key (starts with `AIza...`)
+4. **No credit card required!** ✨
 
 ---
 
-## 🚀 Setup (Step-by-Step)
+## 🎯 One-Command Setup
 
-### Step 1: Clone and Navigate
-
+### Step 1: Clone the Repository
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/researchmate-ai.git
-cd researchmate-ai
+git clone <your-repo-url>
+cd "STEM2Connect AI Hackathon"
 ```
 
-### Step 2: Backend Setup (5 minutes)
-
+### Step 2: Configure Environment
 ```bash
-# Navigate to backend
-cd backend
-
-# Create virtual environment
-python -m venv venv
-
-# Activate virtual environment
-# On Windows:
-venv\Scripts\activate
-# On Mac/Linux:
-source venv/bin/activate
-
-# Install dependencies (this will take 2-3 minutes)
-pip install -r requirements.txt
-
-# Create .env file
+# Copy example environment file
 cp .env.example .env
 
-# Edit .env file with your text editor
-# IMPORTANT: Add your OpenAI API key!
+# Edit .env and add your Gemini API key
+# Find this line: GOOGLE_API_KEY=your-google-gemini-api-key-here
+# Replace with: GOOGLE_API_KEY=AIza-your-actual-key-here
 ```
 
-**Edit `.env` file:**
-```env
-OPENAI_API_KEY=sk-your-api-key-here
-DATABASE_URL=postgresql+asyncpg://postgres:password@localhost:5432/researchmate
-SECRET_KEY=your-secret-key-generate-with-openssl
+**Windows PowerShell**:
+```powershell
+Copy-Item .env.example .env
+notepad .env
 ```
 
-**Create the database:**
+### Step 3: Start Everything! 🎉
 ```bash
-# Option 1: Using Docker (recommended)
-docker run --name researchmate-db -e POSTGRES_PASSWORD=password -e POSTGRES_DB=researchmate -p 5432:5432 -d postgres:15
-
-# Option 2: Using existing PostgreSQL
-createdb researchmate
+docker-compose up -d
 ```
 
-**Run migrations:**
+This **one command** will:
+- ✅ Download all Docker images
+- ✅ Install all dependencies
+- ✅ Start PostgreSQL database
+- ✅ Start Redis cache
+- ✅ Start ChromaDB vector database
+- ✅ Start FastAPI backend
+- ✅ Start React frontend
+
+**Initial startup takes 3-5 minutes** (only the first time)
+
+### Step 4: Wait for Services
 ```bash
-# If using Alembic
-alembic upgrade head
+# Check status
+docker-compose ps
 
-# Or skip for now and let SQLAlchemy create tables on startup
+# Wait until you see:
+# ✅ postgres   healthy
+# ✅ redis      healthy
+# ✅ chromadb   healthy
+# ✅ backend    running
+# ✅ frontend   running
 ```
 
-**Start the backend server:**
-```bash
-uvicorn app.main:app --reload
-
-# You should see:
-# INFO:     Uvicorn running on http://127.0.0.1:8000
-# INFO:     Application startup complete
-```
-
-✅ **Backend is running!** Open http://localhost:8000/docs to see the API documentation.
-
-### Step 3: Frontend Setup (5 minutes)
-
-**Open a NEW terminal** (keep backend running)
-
-```bash
-# Navigate to frontend (from project root)
-cd frontend
-
-# Install dependencies (this will take 2-3 minutes)
-npm install
-
-# Create .env file
-cp .env.example .env
-```
-
-**Edit `.env.local` file:**
-```env
-VITE_API_URL=http://localhost:8000/api/v1
-```
-
-**Start the frontend server:**
-```bash
-npm run dev
-
-# You should see:
-# VITE v5.x.x  ready in xxx ms
-# ➜  Local:   http://localhost:5173/
-```
-
-✅ **Frontend is running!** Open http://localhost:5173 in your browser.
+### Step 5: Access the App! 🎉
+- **Frontend**: http://localhost:5173
+- **API Docs**: http://localhost:8000/docs
+- **Health Check**: http://localhost:8000/health
 
 ---
 
-## 🎮 First Test (5 minutes)
+## 🎮 Try It Out!
 
-### Test 1: Upload a Document
+### 1. Register a User
+1. Go to http://localhost:5173
+2. Click "Sign Up"
+3. Enter email and password
+4. Click "Create Account"
 
-1. **Download a sample research paper:**
-   - Go to https://arxiv.org/
-   - Download any recent CS paper PDF (e.g., https://arxiv.org/pdf/2301.00234.pdf)
-   - Save it as `test_paper.pdf`
+### 2. Upload a Research Paper
+1. Click "Upload Document"
+2. Select a PDF file (max 10MB)
+3. Wait for processing (~30 seconds)
+4. See "Processing Complete" ✅
 
-2. **Upload via UI:**
-   - Open http://localhost:5173
-   - Click "Upload Document" button
-   - Select your `test_paper.pdf`
-   - Wait for processing (should take 10-30 seconds)
+### 3. Ask Questions!
+1. Go to "Chat" section
+2. Type: *"What is the main conclusion of this paper?"*
+3. Get AI answer with citations! 🤖
+4. Click citations to see sources
 
-3. **Verify upload:**
-   - You should see the paper appear in your library
-   - Title, authors, and metadata should be extracted
+---
 
-### Test 2: Ask a Question
+## 🛠️ Useful Commands
 
-1. **Navigate to Chat:**
-   - Click on the uploaded paper
-   - Click "Chat with this paper" button
+### View Logs
+```bash
+# All services
+docker-compose logs -f
 
-2. **Ask a question:**
-   ```
-   What is the main contribution of this paper?
-   ```
+# Backend only
+docker-compose logs -f backend
 
-3. **Check the response:**
-   - You should get an answer within 5 seconds
-   - Answer should include citations like [Source 1] (Page 3)
-   - Sources should be listed below the answer
+# Frontend only
+docker-compose logs -f frontend
+```
 
-✅ **If this works, you're all set!** 🎉
+### Stop Everything
+```bash
+docker-compose down
+```
+
+### Restart a Service
+```bash
+docker-compose restart backend
+```
+
+### Rebuild After Code Changes
+```bash
+# Backend
+docker-compose up -d --build backend
+
+# Frontend
+docker-compose up -d --build frontend
+```
+
+### Complete Reset (Nuclear Option)
+```bash
+# WARNING: This deletes ALL data!
+docker-compose down -v
+docker-compose up -d
+```
 
 ---
 
 ## 🐛 Troubleshooting
 
-### Backend Issues
-
-**Problem: ModuleNotFoundError**
+### Issue: "Port already in use"
+**Solution**: Stop conflicting services
 ```bash
-# Solution: Make sure virtual environment is activated
-source venv/bin/activate  # Mac/Linux
-venv\Scripts\activate      # Windows
+# Windows
+netstat -ano | findstr "8000"
+taskkill /PID <process-id> /F
 
-# Reinstall dependencies
-pip install -r requirements.txt
+# Mac/Linux
+lsof -i :8000
+kill -9 <process-id>
 ```
 
-**Problem: Database connection error**
+### Issue: "Backend won't start"
+**Solution**: Check API key
 ```bash
-# Solution: Check if PostgreSQL is running
-# Docker:
-docker ps  # Should show researchmate-db
+# View backend logs
+docker-compose logs backend
 
-# Start if stopped:
-docker start researchmate-db
-
-# Native PostgreSQL:
-# Mac: brew services start postgresql
-# Linux: sudo systemctl start postgresql
+# Common errors:
+# - "Invalid API key" → Check GOOGLE_API_KEY in .env
+# - "Connection refused" → Database not ready yet (wait 30s)
 ```
 
-**Problem: OpenAI API error**
-```
-Error: You didn't provide an API key
-```
+### Issue: "Out of memory"
+**Solution**: Increase Docker memory
+1. Open Docker Desktop
+2. Settings → Resources
+3. Increase Memory to 4GB+
+4. Click "Apply & Restart"
+
+### Issue: "Cannot connect to Docker daemon"
+**Solution**: Start Docker Desktop
+- Make sure Docker Desktop app is running
+- Wait for Docker icon to show "running"
+
+---
+
+## 📊 What's Running?
+
+| Service | Port | Purpose | URL |
+|---------|------|---------|-----|
+| **Frontend** | 5173 | React UI | http://localhost:5173 |
+| **Backend** | 8000 | FastAPI API | http://localhost:8000/docs |
+| **PostgreSQL** | 5432 | User data, documents | - |
+| **Redis** | 6379 | Cache, sessions | - |
+| **ChromaDB** | 8001 | Vector embeddings | http://localhost:8001 |
+
+---
+
+## 🔧 Development Mode
+
+### Edit Backend Code
+1. Edit files in `backend/`
+2. Changes auto-reload (hot reload enabled)
+3. No need to restart!
+
+### Edit Frontend Code
+1. Edit files in `frontend/src/`
+2. Changes auto-reload (Vite HMR)
+3. Instant preview!
+
+### Run Tests
 ```bash
-# Solution: Check .env file
-cat .env | grep OPENAI_API_KEY
+# Backend tests
+docker-compose exec backend pytest
 
-# Should show: OPENAI_API_KEY=sk-...
-# If not, add it to .env
-```
-
-### Frontend Issues
-
-**Problem: Cannot connect to API**
-```
-Error: Network Error
-```
-```bash
-# Solution 1: Check if backend is running
-curl http://localhost:8000/health
-
-# Should return: {"status":"healthy"}
-
-# Solution 2: Check CORS settings in backend
-# backend/app/main.py should allow http://localhost:5173
-```
-
-**Problem: White screen / blank page**
-```bash
-# Solution: Check browser console (F12)
-# Look for errors
-
-# Common fix: Clear cache and reload
-# Chrome: Ctrl+Shift+R (Cmd+Shift+R on Mac)
-```
-
-### Common Errors
-
-**1. "Address already in use"**
-```bash
-# Backend (port 8000)
-# Find and kill process:
-# Mac/Linux:
-lsof -ti:8000 | xargs kill -9
-
-# Windows:
-netstat -ano | findstr :8000
-taskkill /PID <PID> /F
-
-# Frontend (port 5173) - similar process
-```
-
-**2. "Permission denied"**
-```bash
-# Give execute permission
-chmod +x scripts/setup.sh
-
-# Or run with sudo
-sudo python ...
-```
-
-**3. PDF processing fails**
-```bash
-# Install system dependencies
-# Mac:
-brew install poppler
-
-# Linux:
-sudo apt-get install -y poppler-utils
-
-# Windows: Download poppler from https://github.com/oschwartz10612/poppler-windows
+# Frontend tests
+docker-compose exec frontend npm test
 ```
 
 ---
 
-## 🧪 Verify Everything Works
+## 🎓 Next Steps
 
-Run this checklist:
+1. **Read Full Documentation**
+   - [DOCKER_SETUP_GUIDE.md](DOCKER_SETUP_GUIDE.md) - Complete Docker guide
+   - [BUILD_PHASES.md](BUILD_PHASES.md) - Development phases
+   - [FEATURES_CHECKLIST.md](FEATURES_CHECKLIST.md) - Feature status
 
-- [ ] Backend responds at http://localhost:8000/health
-- [ ] Frontend loads at http://localhost:5173
-- [ ] Can access API docs at http://localhost:8000/docs
-- [ ] Can upload a PDF file
-- [ ] Can see document in library
-- [ ] Can ask a question and get an answer
-- [ ] Answer includes source citations
+2. **Explore the API**
+   - Visit http://localhost:8000/docs
+   - Try the interactive API documentation
+   - Test endpoints with built-in UI
 
-If all checked, **you're ready to develop!** 🚀
+3. **Customize Configuration**
+   - Edit `.env` for different settings
+   - Change LLM model: `GEMINI_MODEL=gemini-1.5-pro`
+   - Adjust chunk size: `CHUNK_SIZE=1000`
+   - Enable debug logging: `LOG_LEVEL=DEBUG`
 
----
-
-## 📁 Project Structure Quick Reference
-
-```
-researchmate-ai/
-├── backend/               # FastAPI backend
-│   ├── app/
-│   │   ├── main.py       # ← Start here (entry point)
-│   │   ├── api/v1/       # API endpoints
-│   │   ├── services/     # Business logic
-│   │   └── models/       # Database models
-│   ├── requirements.txt  # Python dependencies
-│   └── .env             # Environment variables
-│
-├── frontend/             # React frontend
-│   ├── src/
-│   │   ├── App.tsx      # ← Start here (main component)
-│   │   ├── components/  # UI components
-│   │   ├── pages/       # Page components
-│   │   └── services/    # API clients
-│   ├── package.json     # Node dependencies
-│   └── .env            # Environment variables
-│
-└── docs/                # Documentation
-```
+4. **Deploy to Production**
+   - See [DOCKER_SETUP_GUIDE.md](DOCKER_SETUP_GUIDE.md#production-deployment)
+   - Use `docker-compose.prod.yml`
+   - Configure SSL/HTTPS
+   - Set up monitoring
 
 ---
 
-## 🎯 Next Steps
+## 💡 Tips & Tricks
 
-Now that you're set up:
+### Use Free Tier Effectively
+- **Gemini 1.5 Flash**: Fast, free, perfect for dev
+- **Gemini 1.5 Pro**: Advanced reasoning, free with limits
+- **Local Embeddings**: sentence-transformers runs locally (free!)
+- **No API costs**: All vector operations are local
 
-1. **Read the Project Plan:** [PROJECT_PLAN.md](PROJECT_PLAN.md)
-2. **Follow Implementation Guide:** [IMPLEMENTATION_GUIDE.md](IMPLEMENTATION_GUIDE.md)
-3. **Understand Architecture:** [TECHNICAL_ARCHITECTURE.md](TECHNICAL_ARCHITECTURE.md)
-4. **Track Progress:** [FEATURES_CHECKLIST.md](FEATURES_CHECKLIST.md)
-
----
-
-## 💡 Development Tips
-
-### Hot Reload is Enabled
-
-Both backend and frontend support hot reload:
-- **Backend:** Edit Python files → server reloads automatically
-- **Frontend:** Edit React files → page updates in browser
-
-### Useful Commands
-
+### Optimize Performance
 ```bash
-# Backend
-cd backend
-source venv/bin/activate
+# Increase workers (production)
+WORKERS=4 docker-compose up -d backend
 
-# Run tests
-pytest
-
-# Format code
-black app/
-flake8 app/
-
-# Check types
-mypy app/
-
-# Frontend
-cd frontend
-
-# Run tests
-npm test
-
-# Build for production
-npm run build
-
-# Lint
-npm run lint
-
-# Format
-npm run format
+# Reduce memory usage (development)
+CHUNK_SIZE=300 docker-compose up -d backend
 ```
 
-### Debugging
+### Monitor Resources
+```bash
+# Real-time stats
+docker stats
 
-**Backend:**
-```python
-# Add breakpoints
-import pdb; pdb.set_trace()
-
-# Or use print debugging
-print(f"DEBUG: {variable}")
+# Disk usage
+docker system df
 ```
 
-**Frontend:**
-```typescript
-// Browser DevTools (F12)
-console.log('DEBUG:', variable);
+---
 
-// React DevTools extension
-// Chrome: https://chrome.google.com/webstore/detail/react-developer-tools/
-```
+## ❓ FAQ
 
-### Database GUI Tools
+**Q: Do I need to pay for anything?**  
+A: No! Gemini API is 100% free, embeddings run locally.
 
-- **pgAdmin:** https://www.pgadmin.org/
-- **DBeaver:** https://dbeaver.io/
-- **TablePlus:** https://tableplus.com/
+**Q: Can I use OpenAI instead of Gemini?**  
+A: Yes! Set `LLM_PROVIDER=openai` and `OPENAI_API_KEY` in `.env`
 
-Connect with:
-- Host: localhost
-- Port: 5432
-- Database: researchmate
-- User: postgres
-- Password: password
+**Q: How do I update to latest code?**  
+A: `git pull && docker-compose up -d --build`
+
+**Q: Where is my data stored?**  
+A: In Docker volumes: `docker volume ls`
+
+**Q: Can I run without Docker?**  
+A: Yes, but Docker is much easier. See manual setup in docs.
+
+**Q: What PDF formats are supported?**  
+A: Standard PDFs. Text-based PDFs work best.
+
+**Q: How many documents can I upload?**  
+A: Unlimited! (limited by disk space)
 
 ---
 
-## 🤝 Getting Help
+## 🆘 Need Help?
 
-If you're stuck:
-
-1. **Check the docs:**
-   - API docs: http://localhost:8000/docs
-   - README: [README.md](README.md)
-
-2. **Common issues:**
-   - [Troubleshooting section above](#-troubleshooting)
-
-3. **Ask for help:**
-   - GitHub Issues: [Create an issue](https://github.com/yourusername/researchmate-ai/issues)
-   - Team Discord: [Join here](#)
-   - STEM2Connect Discord: [Official channel](#)
+1. **Check logs**: `docker-compose logs -f`
+2. **Health check**: http://localhost:8000/health
+3. **API status**: http://localhost:8000/docs
+4. **Reset everything**: `docker-compose down -v && docker-compose up -d`
 
 ---
 
-## ✅ Ready to Code!
+## 🎉 Success!
 
-You're all set! Here's what to build first:
+You now have a fully functional RAG-powered research assistant!
 
-**Week 1 Focus:**
-1. Get basic document upload working
-2. Implement PDF text extraction
-3. Set up vector database
-4. Create simple chat endpoint
-
-**Start with:** `backend/app/services/document_processor.py`
-
-**Good luck! 🚀**
+**Next**: Upload a research paper and start asking questions! 🚀
 
 ---
 
-## 📚 Additional Resources
-
-### Learning Resources
-- **FastAPI Tutorial:** https://fastapi.tiangolo.com/tutorial/
-- **React Docs:** https://react.dev/learn
-- **LangChain Docs:** https://python.langchain.com/docs/get_started/introduction
-- **ChromaDB Docs:** https://docs.trychroma.com/
-
-### Sample Papers for Testing
-- **arXiv:** https://arxiv.org/ (free research papers)
-- **PubMed Central:** https://www.ncbi.nlm.nih.gov/pmc/ (free medical papers)
-- **bioRxiv:** https://www.biorxiv.org/ (free biology preprints)
-
-### Free API Options (if no OpenAI credits)
-- **HuggingFace Inference API:** Free tier available
-- **Groq:** Fast, free LLM inference
-- **Ollama:** Run local LLMs (llama3, mistral)
-- **Cohere:** Free tier for embeddings and generation
-
----
-
-**Last Updated:** November 10, 2026  
-**Version:** 1.0  
-**Status:** Ready to Use ✅
+**Last Updated**: November 11, 2026  
+**Version**: 2.0 (Phase 2 Complete)
