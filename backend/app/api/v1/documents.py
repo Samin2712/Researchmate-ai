@@ -5,10 +5,10 @@ from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File,
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from typing import List
-import shutil
 from pathlib import Path
 import uuid
 import logging
+import asyncio
 
 from app.core.database import get_db, AsyncSessionLocal
 from app.core.security import get_current_user
@@ -25,6 +25,7 @@ from app.services.ingestion_pipeline import ingestion_pipeline
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+processing_slot = asyncio.Semaphore(1)
 
 
 def validate_file(file: UploadFile) -> None:
@@ -42,8 +43,10 @@ def validate_file(file: UploadFile) -> None:
 
 async def process_document_task(document_id: int, file_path: str, user_id: int):
     # Request sessions may close before a background task finishes.
-    async with AsyncSessionLocal() as db:
-        await _process_document(document_id, file_path, user_id, db)
+    # Only one document at a time per worker to bound embedding/PDF memory use.
+    async with processing_slot:
+        async with AsyncSessionLocal() as db:
+            await _process_document(document_id, file_path, user_id, db)
 
 
 async def _process_document(document_id: int, file_path: str, user_id: int, db: AsyncSession):
@@ -126,10 +129,22 @@ async def upload_document(
     
     # Save file
     try:
+        size = 0
         with file_path.open("wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
+            while block := await file.read(64 * 1024):
+                size += len(block)
+                if size > settings.MAX_UPLOAD_SIZE:
+                    raise HTTPException(400, f'File too large. Maximum size is {settings.MAX_UPLOAD_SIZE / 1024 / 1024}MB')
+                buffer.write(block)
+        with file_path.open('rb') as saved:
+            if saved.read(5) != b'%PDF-':
+                raise HTTPException(400, 'This file is not a valid PDF.')
+    except HTTPException:
+        file_path.unlink(missing_ok=True)
+        raise
     except Exception as e:
         logger.error(f"Error saving file: {e}")
+        file_path.unlink(missing_ok=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error saving file"
@@ -161,6 +176,36 @@ async def upload_document(
     # Process document in background (with embeddings)
     background_tasks.add_task(process_document_task, document.id, str(file_path), current_user.id)
     
+    return document
+
+
+@router.post('/{document_id}/retry', response_model=DocumentResponse)
+async def retry_document(
+    document_id: int,
+    background_tasks: BackgroundTasks,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(Document).where(
+        Document.id == document_id, Document.user_id == current_user.id,
+    ))
+    document = result.scalar_one_or_none()
+    if document is None:
+        raise HTTPException(404, 'Document not found')
+    if document.status != DocumentStatus.FAILED:
+        raise HTTPException(409, 'Only failed documents can be retried.')
+    if not Path(document.file_path).is_file():
+        raise HTTPException(409, 'The original PDF is no longer on the server. Delete this entry and upload the PDF again.')
+    # A failed attempt may have left index entries or relational chunks behind.
+    from sqlalchemy import delete
+    from app.models.document import Chunk
+    await ingestion_pipeline.delete_document_embeddings(str(document_id))
+    await db.execute(delete(Chunk).where(Chunk.document_id == document_id))
+    document.status = DocumentStatus.PROCESSING
+    document.error_message = None
+    await db.commit()
+    await db.refresh(document)
+    background_tasks.add_task(process_document_task, document.id, document.file_path, current_user.id)
     return document
 
 

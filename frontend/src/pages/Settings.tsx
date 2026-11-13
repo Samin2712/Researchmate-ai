@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useUser } from '../services/queries'
 import { useAuth } from '../store/auth'
 import { usePreferences } from '../store/preferences'
+import { Link } from 'react-router-dom'
 export default function Settings() {
   const { data: user } = useUser()
   const { reduceMotion, setReduceMotion } = usePreferences()
@@ -34,7 +35,7 @@ export default function Settings() {
             <dd>{user && new Date(user.created_at).toLocaleDateString()}</dd>
           </div>
         </dl>
-        <p className="muted text-sm">Account profile editing is not available on this server.</p>
+        <Link className="button secondary small" to="/profile">Edit profile and photo</Link>
       </section>
       <section className="settings-section">
         <h2>Motion preferences</h2>

@@ -25,6 +25,7 @@ export const documentService = {
     return { documents, total }
   },
   get: async (id: number) => (await api.get<Document>(`/documents/${id}`)).data,
+  retry: async (id: number) => (await api.post<Document>(`/documents/${id}/retry`)).data,
   remove: async (id: number) => {
     await api.delete(`/documents/${id}`)
   },

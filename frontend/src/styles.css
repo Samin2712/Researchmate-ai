@@ -235,12 +235,17 @@ input[type='checkbox'] {
   position: fixed;
   inset: 0 auto 0 0;
   z-index: 20;
+  overflow-y: auto;
 }
 .sidebar-content {
-  height: 100%;
+  min-height: 100%;
   display: flex;
   flex-direction: column;
   padding: 29px 18px 0;
+}
+@media (max-height: 850px) and (min-width: 901px) {
+  .desktop-sidebar .sidebar-note { display: none; }
+  .desktop-sidebar .sidebar-bottom { padding-top: 20px; }
 }
 .brand {
   display: flex;
@@ -1565,6 +1570,92 @@ input[type='checkbox'] {
 .settings-section {
   padding: 25px 0;
   border-bottom: 1px solid var(--border);
+}
+.profile-summary {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 26px 0 32px;
+  border-bottom: 1px solid var(--border);
+}
+.profile-photo {
+  width: 112px;
+  height: 112px;
+  flex: 0 0 112px;
+  border-radius: 50%;
+  background: #e3efed;
+  color: var(--teal);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+.profile-photo img,
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+.avatar {
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.profile-identity {
+  min-width: 0;
+}
+.profile-identity h2 {
+  font-size: 24px;
+  margin-bottom: 6px;
+}
+.profile-identity p {
+  overflow-wrap: anywhere;
+  margin-bottom: 6px;
+}
+.profile-identity > span,
+.profile-identity > small {
+  display: block;
+  font-size: 12px;
+}
+.profile-photo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 18px 0 10px;
+}
+.profile-form {
+  max-width: 640px;
+  padding-bottom: 30px;
+}
+.profile-form h2 {
+  font-size: 18px;
+}
+.profile-form textarea {
+  font-size: 14px;
+  resize: vertical;
+}
+.profile-form input[readonly] {
+  background: #edf2f5;
+  color: #526571;
+}
+.sidebar-bottom button.nav-link {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  text-align: left;
+}
+@media (max-width: 500px) {
+  .profile-summary {
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .profile-photo {
+    width: 72px;
+    height: 72px;
+    flex-basis: 72px;
+  }
+  .profile-identity h2 {
+    font-size: 20px;
+  }
 }
 .settings-section h2 {
   font-family: inherit;

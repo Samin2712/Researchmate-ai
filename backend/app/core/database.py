@@ -13,15 +13,23 @@ engine_kwargs = {
 }
 
 # Add pooling only for PostgreSQL
-if "postgresql" in settings.DATABASE_URL:
+if settings.DATABASE_URL.startswith(('postgres://', 'postgresql')):
     engine_kwargs.update({
         "pool_pre_ping": True,
         "pool_size": 10,
         "max_overflow": 20,
     })
 
+def normalize_database_url(url: str) -> str:
+    """Accept the PostgreSQL URLs supplied by managed database providers."""
+    for prefix in ('postgres://', 'postgresql://'):
+        if url.startswith(prefix):
+            return 'postgresql+asyncpg://' + url[len(prefix):]
+    return url
+
+
 engine = create_async_engine(
-    settings.DATABASE_URL,
+    normalize_database_url(settings.DATABASE_URL),
     **engine_kwargs
 )
 

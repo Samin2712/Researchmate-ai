@@ -35,6 +35,13 @@ export function DocumentCard({
   const [style, setStyle] = useState<CitationStyle>('APA')
   const [copied, setCopied] = useState(false)
   const client = useQueryClient()
+  const retry = useMutation({
+    mutationFn: () => documentService.retry(document.id),
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: ['documents'] })
+      toast('Paper queued for processing.')
+    },
+  })
   const remove = useMutation({
     mutationFn: () => documentService.remove(document.id),
     onSuccess: () => {
@@ -87,10 +94,16 @@ export function DocumentCard({
       </div>
       {document.status === 'failed' && (
         <p className="document-failure" role="status">
-          {document.error_message || 'Could not process this PDF.'} Delete this paper and upload a
-          readable PDF to try again.
+          {document.error_message ||
+            'Could not process this PDF. Retry processing or upload a readable PDF.'}
         </p>
       )}
+      {document.status === 'failed' && (
+        <button className="text-button" disabled={retry.isPending} onClick={() => retry.mutate()}>
+          {retry.isPending ? 'Retrying…' : 'Retry processing'}
+        </button>
+      )}
+      {retry.isError && <ErrorState message={errorMessage(retry.error)} />}
       <div className="document-actions">
         <Summarizer document={document} />
         <div className="flex items-center gap-1">

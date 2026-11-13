@@ -8,6 +8,7 @@ import {
   Network,
   Settings2,
   Sparkles,
+  UserRound,
 } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
@@ -71,6 +72,10 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         <span>Bring your papers together and follow the evidence.</span>
       </div>
       <nav className="sidebar-bottom" aria-label="Account navigation">
+        <NavLink to="/profile" className="nav-link" onClick={onNavigate}>
+          <UserRound size={19} />
+          My profile
+        </NavLink>
         <NavLink to="/settings" className="nav-link" onClick={onNavigate}>
           <Settings2 size={19} />
           Settings
@@ -79,18 +84,28 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           <CircleHelp size={19} />
           About ResearchMate
         </NavLink>
+        <button className="nav-link" onClick={logout}>
+          <LogOut size={19} />
+          Log out
+        </button>
       </nav>
       <div className="profile">
-        <span className="avatar">
-          {(user?.full_name || user?.email || 'R').slice(0, 1).toUpperCase()}
-        </span>
+        <NavLink
+          to="/profile"
+          className="avatar"
+          aria-label="Open your profile"
+          onClick={onNavigate}
+        >
+          {user?.avatar_url ? (
+            <img src={user.avatar_url} alt="" />
+          ) : (
+            (user?.full_name || user?.email || 'R').slice(0, 1).toUpperCase()
+          )}
+        </NavLink>
         <div>
           <strong>{user?.full_name || 'Researcher'}</strong>
           <span title={user?.email}>{user?.email}</span>
         </div>
-        <button className="icon-button" aria-label="Log out" onClick={logout}>
-          <LogOut size={18} />
-        </button>
       </div>
     </div>
   )

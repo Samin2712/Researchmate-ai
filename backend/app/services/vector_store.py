@@ -53,7 +53,7 @@ class VectorStore:
             
             # Create or get collection
             collection = client.get_or_create_collection(
-                name="research_papers",
+                name=('research_papers' if settings.EMBEDDING_PROVIDER == 'local' else 'research_papers_gemini'),
                 embedding_function=None,
                 metadata={
                     "hnsw:space": "cosine",
@@ -236,4 +236,8 @@ class VectorStore:
 
 
 # Global vector store instance
-vector_store = VectorStore()
+if settings.VECTOR_STORE_MODE == 'database':
+    from app.services.database_vector_store import DatabaseVectorStore
+    vector_store = DatabaseVectorStore()
+else:
+    vector_store = VectorStore()

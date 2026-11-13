@@ -2,7 +2,6 @@
 Document processing service for PDF extraction and metadata
 """
 import pymupdf as fitz  # PyMuPDF
-import pdfplumber
 from pathlib import Path
 from typing import Dict, Optional, List, Tuple
 import re
@@ -193,6 +192,10 @@ class DocumentProcessor:
         Returns:
             Dictionary with extracted data
         """
+        from app.core.config import settings
+        with fitz.open(file_path) as document:
+            if len(document) > settings.MAX_DOCUMENT_PAGES:
+                raise ValueError(f'Upload a PDF with at most {settings.MAX_DOCUMENT_PAGES} pages. Split longer documents into smaller files.')
         if not self.validate_pdf(file_path):
             raise ValueError("Invalid or corrupted PDF file")
         

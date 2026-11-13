@@ -7,6 +7,7 @@ from typing import List, Optional
 from threading import Lock
 import hashlib
 import pickle
+import math
 from pathlib import Path
 
 from app.core.config import settings
@@ -21,7 +22,8 @@ class EmbeddingService:
     """
     
     def __init__(self, model_name: Optional[str] = None):
-        self.model_name = model_name or settings.EMBEDDING_MODEL
+        self.provider = settings.EMBEDDING_PROVIDER
+        self.model_name = model_name or (settings.GEMINI_EMBEDDING_MODEL if self.provider == 'gemini' else settings.EMBEDDING_MODEL)
         self._model = None
         self._model_lock = Lock()
         self.cache_dir = Path("./data/embedding_cache")
@@ -52,7 +54,7 @@ class EmbeddingService:
     
     def _get_cache_path(self, text: str) -> Path:
         """Generate cache file path for a text"""
-        text_hash = hashlib.md5(text.encode()).hexdigest()
+        text_hash = hashlib.sha256(f'{self.provider}:{self.model_name}:{text}'.encode()).hexdigest()
         return self.cache_dir / f"{text_hash}.pkl"
     
     def _load_from_cache(self, text: str) -> Optional[List[float]]:
@@ -88,6 +90,8 @@ class EmbeddingService:
             Embedding vector (list of floats)
         """
         try:
+            if self.provider == 'gemini':
+                return self._embed_remote([query], 'RETRIEVAL_QUERY')[0]
             # Check cache
             if use_cache:
                 cached = self._load_from_cache(query)
@@ -134,6 +138,11 @@ class EmbeddingService:
             List of embedding vectors
         """
         try:
+            if self.provider == 'gemini':
+                results = []
+                for offset in range(0, len(documents), batch_size):
+                    results.extend(self._embed_remote(documents[offset:offset + batch_size], 'RETRIEVAL_DOCUMENT'))
+                return results
             if not documents:
                 return []
             
@@ -205,7 +214,39 @@ class EmbeddingService:
     
     def get_embedding_dimension(self) -> int:
         """Get the dimension of the embedding vectors"""
+        if self.provider == 'gemini':
+            return 768
         return self.model.get_sentence_embedding_dimension()
+
+    def _embed_remote(self, texts: List[str], task_type: str) -> List[List[float]]:
+        """Use hosted embeddings without importing PyTorch or downloading model weights."""
+        import httpx
+        if not settings.GOOGLE_API_KEY:
+            raise ValueError('GOOGLE_API_KEY is required for Gemini embeddings.')
+        model = f'models/{self.model_name}'
+        response = httpx.post(
+            f'https://generativelanguage.googleapis.com/v1beta/{model}:batchEmbedContents',
+            headers={'x-goog-api-key': settings.GOOGLE_API_KEY},
+            json={'requests': [
+                {'model': model, 'content': {'parts': [{'text': text}]},
+                 'taskType': task_type, 'outputDimensionality': 768}
+                for text in texts
+            ]},
+            timeout=45,
+        )
+        if response.status_code != 200:
+            raise ValueError(f'Embedding provider returned HTTP {response.status_code}. Check the API key, model access, and quota in Google AI Studio.')
+        embeddings = response.json().get('embeddings', [])
+        if len(embeddings) != len(texts):
+            raise ValueError('Embedding provider returned an incomplete response. Please retry.')
+        results = []
+        for embedding in embeddings:
+            values = embedding['values']
+            if len(values) != 768 or not all(math.isfinite(value) for value in values):
+                raise ValueError('Embedding provider returned an invalid vector.')
+            norm = math.sqrt(sum(value * value for value in values)) or 1
+            results.append([value / norm for value in values])
+        return results
     
     def clear_cache(self):
         """Clear the embedding cache"""

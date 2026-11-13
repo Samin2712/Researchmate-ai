@@ -2,6 +2,8 @@
 
 ## Run the full app locally
 
+Deploying on Render? Follow [persistent PostgreSQL and low-memory backend setup](docs/RENDER_DEPLOYMENT.md).
+
 From this directory, run `npm run dev` (or `npm.cmd run dev` if PowerShell blocks npm).
 It prepares missing dependencies and starts the backend and frontend together.
 Use `npm run doctor` to check real connections and AI generation.

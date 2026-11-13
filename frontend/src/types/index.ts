@@ -4,6 +4,10 @@ export interface User {
   full_name: string | null
   is_active: boolean
   created_at: string
+  institution?: string | null
+  bio?: string | null
+  research_interests?: string | null
+  avatar_url?: string | null
 }
 export interface Document {
   id: number

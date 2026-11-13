@@ -17,6 +17,7 @@ from app.services.embedder import embedder
 from app.services.vector_store import vector_store
 from app.models.document import Document
 from app.core.database import AsyncSessionLocal
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -98,6 +99,8 @@ class IngestionPipeline:
 
             if not chunks:
                 raise ValueError('No readable text was found. Upload a text-based PDF rather than a scanned image.')
+            if len(chunks) > settings.MAX_DOCUMENT_CHUNKS:
+                raise ValueError(f'This PDF is too large to process. Use fewer than {settings.MAX_DOCUMENT_CHUNKS} text chunks or split it into smaller PDFs.')
             
             await self._update_status(f"Created {len(chunks)} chunks", 0.4)
             
@@ -108,7 +111,7 @@ class IngestionPipeline:
             embeddings = await asyncio.to_thread(
                 embedder.embed_documents,
                 chunk_texts,
-                batch_size=32
+                batch_size=settings.EMBEDDING_BATCH_SIZE
             )
             
             await self._update_status(f"Generated {len(embeddings)} embeddings", 0.7)

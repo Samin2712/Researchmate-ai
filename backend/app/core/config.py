@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Literal
 from typing import Optional, List
 from functools import lru_cache
+from pydantic import Field
 
 
 class Settings(BaseSettings):
@@ -47,6 +48,7 @@ class Settings(BaseSettings):
     CHROMA_MODE: Literal['persistent', 'http'] = 'persistent'
     CHROMA_PORT: int = 8001
     CHROMA_PERSIST_DIR: str = "./data/chroma"
+    VECTOR_STORE_MODE: Literal['chroma', 'database'] = 'chroma'
     
     # JWT
     SECRET_KEY: str = "your-secret-key-change-in-production"
@@ -82,6 +84,11 @@ class Settings(BaseSettings):
     
     # Embedding Model (runs locally - FREE)
     EMBEDDING_MODEL: str = "sentence-transformers/all-MiniLM-L6-v2"
+    EMBEDDING_PROVIDER: Literal['local', 'gemini'] = 'local'
+    GEMINI_EMBEDDING_MODEL: str = 'gemini-embedding-001'
+    EMBEDDING_BATCH_SIZE: int = Field(default=4, ge=1, le=32)
+    MAX_DOCUMENT_PAGES: int = Field(default=100, ge=1)
+    MAX_DOCUMENT_CHUNKS: int = Field(default=1000, ge=1)
     
     # LLM Parameters
     LLM_TEMPERATURE: float = 0.7

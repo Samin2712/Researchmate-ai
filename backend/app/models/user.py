@@ -1,7 +1,7 @@
 """
 User database model
 """
-from sqlalchemy import Column, Integer, String, DateTime, Boolean
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base
@@ -23,6 +23,35 @@ class User(Base):
     # Relationships
     documents = relationship("Document", back_populates="owner", cascade="all, delete-orphan")
     chat_sessions = relationship("ChatSession", back_populates="user", cascade="all, delete-orphan")
+    profile = relationship('UserProfile', uselist=False, lazy='selectin', cascade='all, delete-orphan')
+
+    @property
+    def institution(self):
+        return self.profile.institution if self.profile else None
+
+    @property
+    def bio(self):
+        return self.profile.bio if self.profile else None
+
+    @property
+    def research_interests(self):
+        return self.profile.research_interests if self.profile else None
+
+    @property
+    def avatar_url(self):
+        return self.profile.photo_data if self.profile else None
     
     def __repr__(self):
         return f"<User {self.email}>"
+
+
+class UserProfile(Base):
+    """A separate table allows existing accounts to gain profiles without ALTER TABLE."""
+    __tablename__ = 'user_profiles'
+
+    user_id = Column(Integer, ForeignKey('users.id', ondelete='CASCADE'), primary_key=True)
+    institution = Column(String(200), nullable=True)
+    bio = Column(Text, nullable=True)
+    research_interests = Column(String(500), nullable=True)
+    # Small, re-encoded thumbnails live in the database, not ephemeral upload storage.
+    photo_data = Column(Text, nullable=True)

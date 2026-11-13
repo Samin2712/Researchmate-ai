@@ -8,7 +8,8 @@ from contextlib import asynccontextmanager
 import logging
 from pathlib import Path
 import asyncio
-from sqlalchemy import text
+from sqlalchemy import text, update
+import os
 
 from app.core.config import settings
 from app.api.v1 import auth, documents, chat
@@ -41,6 +42,16 @@ async def lifespan(app: FastAPI):
     # Create database tables
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # Background tasks do not survive process termination. Do not leave papers
+        # claiming to process forever after a restart (deploy with one worker).
+        from app.models.document import Document, DocumentStatus
+        await conn.execute(update(Document).where(
+            Document.status.in_([DocumentStatus.PROCESSING, DocumentStatus.UPLOADING])
+        ).values(status=DocumentStatus.FAILED,
+                 error_message='Processing was interrupted by a server restart. Retry this paper, or upload it again if the original file is unavailable.'))
+
+    if os.environ.get('RENDER') and engine.url.get_backend_name() == 'sqlite':
+        logger.warning('SQLite on Render is temporary unless stored on an attached persistent disk. Set DATABASE_URL to a managed PostgreSQL database to keep accounts after restarts.')
     
     logger.info("Database tables created")
     logger.info("ResearchMate AI started successfully!")
@@ -115,12 +126,18 @@ async def health_check():
         'database': 'connected' if database_ok else 'unavailable',
         'database_type': engine.url.get_backend_name(),
         'llm_provider': settings.LLM_PROVIDER,
-        'embedding_model': settings.EMBEDDING_MODEL,
-        'vector_store': {'status': 'connected' if vector_ok else 'unavailable', 'mode': settings.CHROMA_MODE},
+        'embedding_model': embedder.model_name,
+        'vector_store': {'status': 'connected' if vector_ok else 'unavailable', 'mode': settings.VECTOR_STORE_MODE},
         'embeddings': {'status': 'loaded' if embeddings_ok else 'unavailable', 'model': embedder.model_name},
         'llm': {**llm_service.get_provider_info(), 'connectivity': 'not_checked', 'model': settings.GEMINI_MODEL if settings.LLM_PROVIDER == 'gemini' else None},
         'redis': {'status': 'not_used', 'required': False},
     })
+
+
+@app.get('/health/live', tags=['Health'])
+async def liveness():
+    """Render health probe: never load models or contact external AI services."""
+    return {'status': 'alive'}
 
 
 # Include API routers

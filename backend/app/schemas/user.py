@@ -28,9 +28,20 @@ class UserResponse(UserBase):
     id: int
     is_active: bool
     created_at: datetime
+    institution: Optional[str] = None
+    bio: Optional[str] = None
+    research_interests: Optional[str] = None
+    avatar_url: Optional[str] = None
     
     class Config:
         from_attributes = True
+
+
+class ProfileUpdate(BaseModel):
+    full_name: str = Field(min_length=1, max_length=150)
+    institution: Optional[str] = Field(default=None, max_length=200)
+    bio: Optional[str] = Field(default=None, max_length=1000)
+    research_interests: Optional[str] = Field(default=None, max_length=500)
 
 
 class Token(BaseModel):

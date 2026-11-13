@@ -16,6 +16,7 @@ const Library = lazy(() => import('./pages/Library'))
 const Chat = lazy(() => import('./pages/Chat'))
 const Graph = lazy(() => import('./pages/Graph'))
 const Settings = lazy(() => import('./pages/Settings'))
+const Profile = lazy(() => import('./pages/Profile'))
 const About = lazy(() => import('./pages/About'))
 
 function VerifiedSession({ children }: { children: ReactNode }) {
@@ -84,6 +85,7 @@ export default function App() {
             <Route path="chat" element={<Chat />} />
             <Route path="graph" element={<Graph />} />
             <Route path="settings" element={<Settings />} />
+            <Route path="profile" element={<Profile />} />
             <Route path="about" element={<About />} />
             <Route
               path="*"

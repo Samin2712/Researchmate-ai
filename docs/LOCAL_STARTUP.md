@@ -57,11 +57,25 @@ DATABASE_URL=sqlite+aiosqlite:///./test.db
 CHROMA_MODE=persistent
 CHROMA_PERSIST_DIR=./data/chroma
 GEMINI_MODEL=gemini-2.5-flash
+EMBEDDING_PROVIDER=local
+VECTOR_STORE_MODE=chroma
+EMBEDDING_BATCH_SIZE=4
+GEMINI_EMBEDDING_MODEL=gemini-embedding-001
+MAX_DOCUMENT_PAGES=100
+MAX_DOCUMENT_CHUNKS=1000
 CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 ```
 
 SQLite data remains in `backend/test.db`; vectors remain in `backend/data/chroma`. Stopping the app does
 not remove them. Uploaded papers, local environment files, caches and the virtual environment are ignored by Git.
+
+Profile editing, profile photos, logout, PDF retry, and restart recovery also work
+locally with this configuration. Startup creates the new profile tables in your
+existing local database without resetting accounts. The Gemini embedding model
+setting is unused while `EMBEDDING_PROVIDER=local`; Gemini chat still uses your
+existing `GOOGLE_API_KEY`. Keep the local provider/vector settings to reuse your
+existing Chroma indexes. Render's PostgreSQL/Gemini/database settings belong in
+the Render dashboard; do not paste its Internal Database URL into the local file.
 
 To use PostgreSQL, set a working `DATABASE_URL=postgresql+asyncpg://...` in `backend/.env` or set
 `RESEARCHMATE_DATABASE_URL` in your terminal, and run that PostgreSQL service separately.
