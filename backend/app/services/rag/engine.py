@@ -65,6 +65,10 @@ Remember: Your answers should be trustworthy, verifiable, and helpful for academ
         Returns:
             List of relevant chunks with metadata
         """
+        # A document overview has no topical search terms. Read representative
+        # passages directly instead of rejecting them on semantic similarity.
+        if user_id and document_ids and self._is_summary_request(query):
+            return await self._retrieve_document_overview(user_id, document_ids)
         try:
             # Generate query embedding
             query_embedding = await asyncio.to_thread(
@@ -100,7 +104,42 @@ Remember: Your answers should be trustworthy, verifiable, and helpful for academ
         
         except Exception as e:
             logger.error(f"Context retrieval failed: {e}")
-            return []
+            raise RuntimeError("Document retrieval failed. Please check the search service and try again.") from e
+
+    @staticmethod
+    def _is_summary_request(query: str) -> bool:
+        return bool(re.search(r"\b(summar(?:ize|ise|y)|overview)\b", query, re.IGNORECASE))
+
+    async def _retrieve_document_overview(self, user_id, document_ids):
+        from sqlalchemy import select
+        from app.core.database import AsyncSessionLocal
+        from app.models.document import Chunk, Document, DocumentStatus
+
+        # Enforce ownership here as well as in semantic search.
+        statement = (
+            select(Chunk, Document)
+            .join(Document, Chunk.document_id == Document.id)
+            .where(Document.user_id == int(user_id),
+                   Document.id.in_([int(value) for value in document_ids]),
+                   Document.status == DocumentStatus.COMPLETED)
+            .order_by(Document.id, Chunk.chunk_index)
+        )
+        async with AsyncSessionLocal() as db:
+            rows = (await db.execute(statement)).all()
+
+        # Spread a bounded context across the paper, including its conclusion.
+        limit = max(settings.TOP_K_RESULTS, 12)
+        if len(rows) > limit:
+            rows = [rows[round(i * (len(rows) - 1) / (limit - 1))] for i in range(limit)]
+        return [
+            {"id": chunk.vector_id, "text": chunk.text,
+             # Direct document reads carry no semantic relevance score.
+             "distance": 1.0,
+             "metadata": {"document_id": str(document.id), "user_id": str(document.user_id),
+                          "page_number": chunk.page_number, "title": document.title,
+                          "authors": document.authors or "Unknown"}}
+            for chunk, document in rows
+        ]
     
     def _format_context(self, chunks: List[Dict[str, Any]]) -> str:
         """Format retrieved chunks into context string"""
