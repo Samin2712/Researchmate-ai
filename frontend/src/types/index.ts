@@ -24,6 +24,7 @@ export interface Document {
   updated_at: string | null
 }
 export interface Source {
+  source_number?: number
   document_id: number | string
   title: string
   authors?: string

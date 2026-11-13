@@ -3,6 +3,8 @@ import { BookOpen, Sparkles, UserRound } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { motion } from 'motion/react'
 import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import { citationLinks, normalizeAnswerMarkdown } from './answerFormatting'
 import type { Message } from '../../types'
 
 export const MessageBubble = memo(function MessageBubble({
@@ -13,6 +15,7 @@ export const MessageBubble = memo(function MessageBubble({
   streaming?: boolean
 }) {
   const assistant = message.role === 'assistant'
+  const sourcePrefix = `message-${message.id}`
   const confidence = message.confidence_score == null ? null : Math.round(message.confidence_score)
   return (
     <motion.article
@@ -34,8 +37,23 @@ export const MessageBubble = memo(function MessageBubble({
           <p className="notice">Incomplete response. Resend your question for a complete answer.</p>
         )}
         <div className="markdown">
-          <ReactMarkdown>
-            {message.content ||
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm, [citationLinks, { sources: message.sources || [], prefix: sourcePrefix }]]}
+            components={{
+              table: ({ children }) => (
+                <div className="answer-table-scroll" role="region" aria-label="Comparison table" tabIndex={0}>
+                  <table>{children}</table>
+                </div>
+              ),
+              a: ({ href, children, ...props }) => href?.startsWith(`#${sourcePrefix}-source-`) ? (
+                <a {...props} href={href} className="answer-citation" onClick={() => {
+                  const source = document.getElementById(href.slice(1))
+                  if (source instanceof HTMLDetailsElement) source.open = true
+                }}>{children}</a>
+              ) : <a {...props} href={href}>{children}</a>,
+            }}
+          >
+            {(assistant ? normalizeAnswerMarkdown(message.content) : message.content) ||
               (streaming ? 'Looking through your papers…' : 'No answer was returned.')}
           </ReactMarkdown>
         </div>
@@ -47,7 +65,7 @@ export const MessageBubble = memo(function MessageBubble({
             </h3>
             <div>
               {message.sources.map((source, index) => (
-                <details key={`${source.document_id}-${index}`}>
+                <details id={`${sourcePrefix}-source-${index + 1}`} key={`${source.document_id}-${index}`}>
                   <summary>
                     <span className="source-number">{index + 1}</span>
                     <span>

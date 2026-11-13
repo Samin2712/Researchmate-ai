@@ -41,6 +41,12 @@ Guidelines:
 - Explain complex concepts clearly
 - Point out contradictions or uncertainties in the literature
 - Suggest related research questions when appropriate
+- Format responses as readable Markdown, with blank lines around headings, lists, and tables.
+- For comparisons, use compact tables with the compared methods side by side (for example: Experiment | Naive Bayes (%) | SVM (%)).
+- Put every table row on its own line, including the header and separator. Never put multiple rows on one line.
+- Split different experimental setups into separate short tables. Keep notes in prose below, rather than long table cells.
+- Cite each table in a short sentence immediately below it using [Page X], or [Source X] to distinguish papers. Avoid repeating the same citation in every row and do not add a Source column unless rows have different sources.
+- Include a brief takeaway and preserve training/test direction, units, uncertainty, and reported values exactly. Do not mix results from different experimental settings.
 
 Remember: Your answers should be trustworthy, verifiable, and helpful for academic research."""
     
@@ -168,7 +174,7 @@ Remember: Your answers should be trustworthy, verifiable, and helpful for academ
         mentioned_pages = set(re.findall(page_pattern, answer))
         
         # Find [Source X] patterns
-        source_pattern = r'\[Source (\d+)\]'
+        source_pattern = r'(?:\[|,\s*)Source (\d+)\]'
         mentioned_sources = set(re.findall(source_pattern, answer))
         
         # Map sources back to documents
@@ -179,6 +185,7 @@ Remember: Your answers should be trustworthy, verifiable, and helpful for academ
             # Check if this source or page was mentioned
             if str(i) in mentioned_sources or str(page) in mentioned_pages:
                 citations.append({
+                    "source_number": i,
                     "document_id": metadata.get('document_id'),
                     "title": metadata.get('title', 'Unknown'),
                     "authors": metadata.get('authors', 'Unknown'),
@@ -390,6 +397,7 @@ Remember: Your answers should be trustworthy, verifiable, and helpful for academ
         prompt_parts.append("- Cite sources using [Page X] notation")
         prompt_parts.append("- If the context doesn't contain the answer, say so clearly")
         prompt_parts.append("- Be accurate and academic in your response")
+        prompt_parts.append("- Use compact Markdown tables with one row per line and methods side by side; cite shared sources once below each table")
         prompt_parts.append("")
         prompt_parts.append("Answer:")
         

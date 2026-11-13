@@ -37,7 +37,7 @@ const pdf = Buffer.from('%PDF-1.4\n1 0 obj << /Type /Catalog >> endobj\n%%EOF')
 
 async function mockAPI(
   page: Page,
-  options: { empty?: boolean; unauthorized?: boolean; streamError?: boolean } = {},
+  options: { empty?: boolean; unauthorized?: boolean; streamError?: boolean; answer?: string } = {},
 ) {
   let documents = options.empty ? [] : [paper, secondPaper]
   let loggedIn = false
@@ -103,7 +103,7 @@ async function mockAPI(
           contentType: 'text/event-stream',
           body: 'data: {"type":"session","session_id":1}\n\ndata: {"type":"error","error":"The model provider is unavailable. Try again."}\n\n',
         })
-      const text = 'The main finding connects relevant evidence through attention [Page 2].'
+      const text = options.answer || 'The main finding connects relevant evidence through attention [Page 2].'
       hasSession = true
       messages = [
         {
@@ -157,6 +157,27 @@ async function navigate(page: Page, label: string) {
       .getByRole('link', { name: label, exact: true })
       .click()
 }
+
+test('comparison tables and page citations remain readable (controlled API)', async ({ page }) => {
+  await mockAPI(page, { answer: '## Classifier comparison\n\nAccuracy varies by experiment.\n\n| Experiment | Naive Bayes (%) | SVM (%) | | :--- | ---: | ---: | | Newswire, same domain | 78.2 | 78.2 | | Movie reviews, same domain | 78.9 | 81.5 |\n\nSource: [Page 2, Source 1].\n\nSVM performs better on movie reviews in this setting.' })
+  await signIn(page)
+  await navigate(page, 'Research chat')
+  await page.getByRole('textbox', { name: 'Your question' }).fill('Compare NB and SVM')
+  await page.getByRole('textbox', { name: 'Your question' }).press('Enter')
+  const answer = page.getByRole('article', { name: 'ResearchMate answer' })
+  await expect(answer.getByRole('table')).toBeVisible()
+  await expect(answer.getByRole('row')).toHaveCount(3)
+  const citation = answer.getByRole('link', { name: 'p. 2', exact: true })
+  await expect(citation).toBeVisible()
+  await answer.getByRole('table').screenshot({ path: `test-results/answer-table-${page.viewportSize()?.width}.png` })
+  await citation.click()
+  await expect(answer.locator('details')).toHaveAttribute('open', '')
+  await expect(answer.getByText(source.chunk_text, { exact: true })).toBeVisible()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+  await page.screenshot({ path: `test-results/answer-formatting-${page.viewportSize()?.width}.png`, fullPage: true })
+  await page.reload()
+  await expect(page.getByRole('table')).toBeVisible()
+})
 
 test('registration → upload → streaming chat → history → export → logout (controlled API)', async ({
   page,

@@ -1165,6 +1165,65 @@ input[type='checkbox'] {
   color: #0d7269;
   text-decoration: underline;
 }
+.answer-table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 16px 0;
+  border: 1px solid #dce7e8;
+  border-radius: 8px;
+}
+.answer-table-scroll:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 3px;
+}
+.markdown table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  line-height: 1.6;
+  text-align: left;
+  overflow-wrap: normal;
+}
+.markdown th,
+.markdown td {
+  padding: 11px 14px;
+  min-width: 100px;
+  max-width: 360px;
+  vertical-align: top;
+  border-bottom: 1px solid #e3ebed;
+}
+.markdown th {
+  background: #edf5f3;
+  color: #234d49;
+  font-weight: 650;
+}
+.markdown tbody tr:nth-child(even) {
+  background: #f8fbfb;
+}
+.markdown tbody tr:last-child td {
+  border-bottom: 0;
+}
+.markdown .answer-citation {
+  display: inline-block;
+  padding: 0 6px;
+  border-radius: 4px;
+  background: #edf5f3;
+  color: #246d63;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.7;
+  white-space: nowrap;
+  text-decoration: none;
+  vertical-align: baseline;
+}
+.markdown .answer-citation:hover {
+  background: #dceee8;
+  text-decoration: underline;
+}
+.message-sources details:target {
+  border-color: var(--teal);
+  scroll-margin-block: 24px;
+}
 .export-controls {
   display: flex;
   align-items: center;
