@@ -4,8 +4,7 @@ Uses sentence-transformers for local, free embeddings
 """
 import logging
 from typing import List, Optional
-import numpy as np
-from sentence_transformers import SentenceTransformer
+from threading import Lock
 import hashlib
 import pickle
 from pathlib import Path
@@ -23,16 +22,28 @@ class EmbeddingService:
     
     def __init__(self, model_name: Optional[str] = None):
         self.model_name = model_name or settings.EMBEDDING_MODEL
-        self.model = None
+        self._model = None
+        self._model_lock = Lock()
         self.cache_dir = Path("./data/embedding_cache")
         self.cache_dir.mkdir(parents=True, exist_ok=True)
-        self._load_model()
+
+    @property
+    def model(self):
+        """Load ML libraries and weights on first use, after API startup."""
+        if self._model is None:
+            with self._model_lock:
+                if self._model is None:
+                    self._load_model()
+        return self._model
     
     def _load_model(self):
         """Load the embedding model"""
         try:
+            from sentence_transformers import SentenceTransformer
+
             logger.info(f"Loading embedding model: {self.model_name}")
-            self.model = SentenceTransformer(self.model_name)
+            model = SentenceTransformer(self.model_name)
+            self._model = model
             logger.info(f"✅ Embedding model loaded successfully")
             logger.info(f"📐 Embedding dimension: {self.model.get_sentence_embedding_dimension()}")
         except Exception as e:

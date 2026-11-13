@@ -4,9 +4,7 @@ Manages document embeddings and semantic search
 """
 import logging
 from typing import List, Dict, Any, Optional
-import chromadb
-from chromadb.config import Settings as ChromaSettings
-from chromadb.utils import embedding_functions
+from threading import Lock
 
 from app.core.config import settings
 
@@ -20,22 +18,41 @@ class VectorStore:
     """
     
     def __init__(self):
-        self.client = None
-        self.collection = None
-        self._initialize_client()
+        self._client = None
+        self._collection = None
+        self._init_lock = Lock()
+
+    def _ensure_initialized(self):
+        if self._collection is None:
+            with self._init_lock:
+                if self._collection is None:
+                    self._initialize_client()
+
+    @property
+    def client(self):
+        self._ensure_initialized()
+        return self._client
+
+    @property
+    def collection(self):
+        self._ensure_initialized()
+        return self._collection
     
     def _initialize_client(self):
         """Initialize ChromaDB client and collection"""
         try:
+            import chromadb
+            from chromadb.config import Settings as ChromaSettings
+
             # Configure ChromaDB client
             chroma_settings = ChromaSettings(anonymized_telemetry=False)
             if settings.CHROMA_MODE == 'http':
-                self.client = chromadb.HttpClient(host=settings.CHROMA_HOST, port=settings.CHROMA_PORT, settings=chroma_settings)
+                client = chromadb.HttpClient(host=settings.CHROMA_HOST, port=settings.CHROMA_PORT, settings=chroma_settings)
             else:
-                self.client = chromadb.PersistentClient(path=settings.CHROMA_PERSIST_DIR, settings=chroma_settings)
+                client = chromadb.PersistentClient(path=settings.CHROMA_PERSIST_DIR, settings=chroma_settings)
             
             # Create or get collection
-            self.collection = self.client.get_or_create_collection(
+            collection = client.get_or_create_collection(
                 name="research_papers",
                 embedding_function=None,
                 metadata={
@@ -45,6 +62,8 @@ class VectorStore:
                 }
             )
             
+            self._client = client
+            self._collection = collection
             logger.info(f"✅ ChromaDB initialized - Collection: research_papers")
             logger.info(f"📊 Current collection size: {self.collection.count()} documents")
         

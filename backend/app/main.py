@@ -100,11 +100,15 @@ async def health_check():
     except Exception:
         logger.warning('Database health check failed')
     try:
-        await asyncio.wait_for(asyncio.to_thread(vector_store.client.heartbeat), timeout=5)
+        await asyncio.wait_for(asyncio.to_thread(lambda: vector_store.client.heartbeat()), timeout=5)
         vector_ok = True
     except Exception:
         vector_ok = False
-    embeddings_ok = embedder.model is not None
+    try:
+        await asyncio.wait_for(asyncio.to_thread(embedder.get_embedding_dimension), timeout=5)
+        embeddings_ok = True
+    except Exception:
+        embeddings_ok = False
     healthy = database_ok and vector_ok and embeddings_ok
     return JSONResponse(status_code=200 if healthy else 503, content={
         'status': 'healthy' if healthy else 'unhealthy',
