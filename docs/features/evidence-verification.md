@@ -43,6 +43,27 @@ inspected. Current browser screenshots are local and intentionally ignored:
 - frontend/evidence-test-results/evidence-citation-real-PDF-5ea6e-ode-export-and-focus-return-mobile/source-panel.png
 - frontend/evidence-test-results/evidence-citation-real-PDF-5ea6e-ode-export-and-focus-return-mobile/notebook.png
 
+## Post-deployment verification
+
+Application commit: `5071d54b617bff787405d254437f634e7c2a7d00`, pushed to main.
+Both Render deploys reached `live` on 14 November 2026:
+
+- Frontend: `dep-dbs8o0lckfvc73dbholg`, live at 22:28:20 Asia/Dhaka.
+- Backend: `dep-dbs8o0lckfvc73dbhoog`, live at 22:29:13 Asia/Dhaka.
+
+Unmocked production smoke test passed with the synthetic repository PDF and real
+Gemini embeddings/generation: upload, cited answer, original PDF, page 2 mapping,
+notebook creation/edit, fresh-login persistence, Bengali Markdown export and
+quote retention after document deletion. Test paper/note/conversation removed.
+Hosted browser checks passed for dashboard, library, chat, graph, settings,
+profile, about and the evidence notebook with no page runtime errors.
+Render error log query since the backend went live returned no errors.
+
+The default local API was restarted with the new schema/code. A second unmocked
+smoke test passed on localhost:8000 using its normal local sentence-transformer
+embeddings and Chroma, plus real Gemini generation. The local frontend was
+restarted on port 5173. Temporary isolated test APIs were stopped.
+
 ## Deployment and remaining limits
 
 The existing Render backend uses PostgreSQL, database vectors, Gemini embeddings
