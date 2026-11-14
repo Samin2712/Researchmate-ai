@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, type ReactNode } from 'react'
 import { X } from 'lucide-react'
-import { motion } from 'motion/react'
+import { motion, useReducedMotion } from 'motion/react'
 
 export function Modal({
   title,
@@ -15,6 +15,7 @@ export function Modal({
 }) {
   const ref = useRef<HTMLDialogElement>(null)
   const titleId = useId()
+  const reducedMotion = useReducedMotion()
   useEffect(() => {
     const dialog = ref.current!
     const previous = document.activeElement as HTMLElement | null
@@ -38,7 +39,7 @@ export function Modal({
       }}
     >
       <motion.div
-        initial={{ opacity: 0, y: 8 }}
+        initial={reducedMotion ? false : { opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.15 }}
       >

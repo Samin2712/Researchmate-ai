@@ -4,8 +4,9 @@ Document management API endpoints
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
-from typing import List
+from typing import List, Optional
 from pathlib import Path
+from collections import defaultdict
 import uuid
 import logging
 import asyncio
@@ -14,7 +15,7 @@ from app.core.database import get_db, AsyncSessionLocal
 from app.core.security import get_current_user
 from app.core.config import settings
 from app.models.user import User
-from app.models.document import Document, DocumentStatus
+from app.models.document import Document, DocumentStatus, CollectionDocument, DocumentTag
 from app.schemas.document import (
     DocumentResponse,
     DocumentListResponse,
@@ -213,30 +214,77 @@ async def retry_document(
 async def list_documents(
     skip: int = 0,
     limit: int = 100,
+    collection_id: Optional[int] = None,
+    tag_id: Optional[int] = None,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    List all documents for current user
+    List all documents for current user, with optional collection and tag filtering
     """
-    # Get total count
-    count_result = await db.execute(
-        select(func.count(Document.id)).where(Document.user_id == current_user.id)
-    )
-    total = count_result.scalar()
-    
-    # Get documents
+    from app.api.v1.collections import _get_collection_or_404, _get_tag_or_404
+    if collection_id is not None:
+        await _get_collection_or_404(collection_id, current_user.id, db)
+    if tag_id is not None:
+        await _get_tag_or_404(tag_id, current_user.id, db)
+    query = select(Document).where(Document.user_id == current_user.id)
+    count_query = select(func.count(Document.id)).where(Document.user_id == current_user.id)
+
+    if collection_id is not None:
+        query = query.join(
+            CollectionDocument, CollectionDocument.document_id == Document.id
+        ).where(CollectionDocument.collection_id == collection_id)
+        count_query = count_query.join(
+            CollectionDocument, CollectionDocument.document_id == Document.id
+        ).where(CollectionDocument.collection_id == collection_id)
+
+    if tag_id is not None:
+        query = query.join(
+            DocumentTag, DocumentTag.document_id == Document.id
+        ).where(DocumentTag.tag_id == tag_id)
+        count_query = count_query.join(
+            DocumentTag, DocumentTag.document_id == Document.id
+        ).where(DocumentTag.tag_id == tag_id)
+
+    count_result = await db.execute(count_query)
+    total = count_result.scalar() or 0
+
     result = await db.execute(
-        select(Document)
-        .where(Document.user_id == current_user.id)
-        .order_by(Document.created_at.desc())
+        query.order_by(Document.created_at.desc(), Document.id.desc())
         .offset(skip)
         .limit(limit)
     )
     documents = result.scalars().all()
-    
+
+    doc_ids = [d.id for d in documents]
+    tag_map = defaultdict(list)
+    col_map = defaultdict(list)
+    if doc_ids:
+        tag_rows = await db.execute(
+            select(DocumentTag.document_id, DocumentTag.tag_id).where(
+                DocumentTag.document_id.in_(doc_ids)
+            )
+        )
+        for d_id, t_id in tag_rows.all():
+            tag_map[d_id].append(t_id)
+
+        col_rows = await db.execute(
+            select(CollectionDocument.document_id, CollectionDocument.collection_id).where(
+                CollectionDocument.document_id.in_(doc_ids)
+            )
+        )
+        for d_id, c_id in col_rows.all():
+            col_map[d_id].append(c_id)
+
+    doc_responses = []
+    for d in documents:
+        resp = DocumentResponse.model_validate(d)
+        resp.tag_ids = tag_map[d.id]
+        resp.collection_ids = col_map[d.id]
+        doc_responses.append(resp)
+
     return {
-        "documents": documents,
+        "documents": doc_responses,
         "total": total
     }
 
@@ -263,8 +311,17 @@ async def get_document(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Document not found"
         )
-    
-    return document
+
+    tag_rows = await db.execute(
+        select(DocumentTag.tag_id).where(DocumentTag.document_id == document.id)
+    )
+    col_rows = await db.execute(
+        select(CollectionDocument.collection_id).where(CollectionDocument.document_id == document.id)
+    )
+    resp = DocumentResponse.model_validate(document)
+    resp.tag_ids = [r[0] for r in tag_rows.all()]
+    resp.collection_ids = [r[0] for r in col_rows.all()]
+    return resp
 
 
 @router.patch("/{document_id}", response_model=DocumentResponse)
@@ -298,8 +355,17 @@ async def update_document(
     
     await db.commit()
     await db.refresh(document)
-    
-    return document
+
+    tag_rows = await db.execute(
+        select(DocumentTag.tag_id).where(DocumentTag.document_id == document.id)
+    )
+    col_rows = await db.execute(
+        select(CollectionDocument.collection_id).where(CollectionDocument.document_id == document.id)
+    )
+    resp = DocumentResponse.model_validate(document)
+    resp.tag_ids = [r[0] for r in tag_rows.all()]
+    resp.collection_ids = [r[0] for r in col_rows.all()]
+    return resp
 
 
 @router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)

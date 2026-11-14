@@ -86,3 +86,10 @@ and other React Router routes load normally.
 If the process still stops, inspect Render logs/metrics for an out-of-memory kill,
 exit code, or traceback. The code changes reduce memory pressure but cannot
 confirm the original cause without deployment logs or guarantee a hosting quota.
+
+
+## Collections/citations upgrade (2026-11-14)
+
+Deploy both services from the same main commit. Startup now upgrades missing citation columns on existing PostgreSQL/SQLite databases without resetting papers. Explicit migration, if desired: `python -m alembic upgrade head` (the hosted requirements include Alembic). `render.yaml` records the service settings for future Blueprint use; an ordinary main-branch push deploys the existing services and does not require creating a new Blueprint or database. Match resource names before adopting a Blueprint, and retain existing DATABASE_URL, SECRET_KEY, API keys, and actual public origins.
+
+Production Docker now uses the standalone command `docker compose -f docker-compose.prod.yml up -d --build`; set POSTGRES_PASSWORD and a stable SECRET_KEY first. It uses PostgreSQL vectors, persistent data/upload volumes, one backend worker, and a same-origin Nginx frontend proxy. Add HTTPS at the ingress before public use. Docker execution must be verified on a Docker-enabled machine.

@@ -1,128 +1,58 @@
-version: '3.8'
-
+# Standalone production stack: docker compose -f docker-compose.prod.yml up -d --build
 services:
-  # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
-    container_name: researchmate-postgres-prod
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER:-researchmate}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-researchmate}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    networks:
-      - researchmate-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
-
-  # Redis Cache
-  redis:
-    image: redis:7-alpine
-    container_name: researchmate-redis-prod
-    volumes:
-      - redis_data:/data
-    networks:
-      - researchmate-network
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
-    restart: unless-stopped
-
-  # ChromaDB Vector Database
-  chromadb:
-    image: chromadb/chroma:latest
-    container_name: researchmate-chromadb-prod
-    volumes:
-      - chroma_data:/chroma/chroma
-    environment:
-      - IS_PERSISTENT=TRUE
-      - ANONYMIZED_TELEMETRY=FALSE
-    networks:
-      - researchmate-network
-    restart: unless-stopped
-
-  # Backend API (FastAPI)
   backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile
+      dockerfile: ../Dockerfile.backend
       target: production
-    container_name: researchmate-backend-prod
     environment:
-      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
-      - REDIS_URL=redis://redis:6379/0
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-      - CHROMA_HOST=chromadb
-      - CHROMA_PORT=8000
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-      - SECRET_KEY=${SECRET_KEY}
-      - ENVIRONMENT=production
-      - DEBUG=False
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-researchmate}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-researchmate}
+      SECRET_KEY: ${SECRET_KEY:?Set a strong stable SECRET_KEY}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      LLM_PROVIDER: ${LLM_PROVIDER:-gemini}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
+      EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-local}
+      VECTOR_STORE_MODE: database
+      UPLOAD_DIR: /app/uploads
+      ENVIRONMENT: production
+      DEBUG: 'false'
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost}
     volumes:
       - backend_uploads:/app/uploads
+      - backend_data:/app/data
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
-        condition: service_started
-      chromadb:
-        condition: service_started
-    networks:
-      - researchmate-network
     restart: unless-stopped
-    deploy:
-      replicas: 2
-      resources:
-        limits:
-          cpus: '1'
-          memory: 2G
-
-  # Frontend (React + Vite)
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
+      dockerfile: ../Dockerfile.frontend
       target: production
       args:
-        - VITE_API_URL=${VITE_API_URL}
-        - VITE_WS_URL=${VITE_WS_URL}
-    container_name: researchmate-frontend-prod
-    networks:
-      - researchmate-network
-    restart: unless-stopped
-
-  # Nginx Reverse Proxy
-  nginx:
-    image: nginx:alpine
-    container_name: researchmate-nginx
+        VITE_API_URL: /api/v1
     ports:
       - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro
-      - ./frontend/dist:/usr/share/nginx/html:ro
     depends_on:
       - backend
-      - frontend
-    networks:
-      - researchmate-network
     restart: unless-stopped
-
-networks:
-  researchmate-network:
-    driver: bridge
-
 volumes:
   postgres_data:
-    driver: local
-  redis_data:
-    driver: local
-  chroma_data:
-    driver: local
   backend_uploads:
-    driver: local
+  backend_data:

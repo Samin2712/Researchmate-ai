@@ -19,3 +19,5 @@ httpx>=0.28,<1
 google-genai>=1,<2
 openai>=1.60,<2
 anthropic>=0.45,<1
+
+alembic>=1.14,<2

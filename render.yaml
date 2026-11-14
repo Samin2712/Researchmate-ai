@@ -1,0 +1,47 @@
+# Match these names to existing services before syncing. No database is provisioned.
+services:
+  - type: web
+    name: researchmate-backend
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements-hosted.txt
+    startCommand: python -m alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1
+    healthCheckPath: /health/live
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: 'false'
+      - key: EMBEDDING_PROVIDER
+        value: gemini
+      - key: VECTOR_STORE_MODE
+        value: database
+      - key: LLM_PROVIDER
+        value: gemini
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+      - key: DATABASE_URL
+        sync: false
+      - key: SECRET_KEY
+        sync: false
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+  - type: web
+    name: researchmate-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: NODE_VERSION
+        value: 22
+      - key: VITE_API_URL
+        sync: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

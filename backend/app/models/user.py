@@ -23,6 +23,8 @@ class User(Base):
     # Relationships
     documents = relationship("Document", back_populates="owner", cascade="all, delete-orphan")
     chat_sessions = relationship("ChatSession", back_populates="user", cascade="all, delete-orphan")
+    collections = relationship("Collection", back_populates="owner", cascade="all, delete-orphan")
+    tags = relationship("Tag", back_populates="owner", cascade="all, delete-orphan")
     profile = relationship('UserProfile', uselist=False, lazy='selectin', cascade='all, delete-orphan')
 
     @property

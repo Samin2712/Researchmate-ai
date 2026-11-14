@@ -3,10 +3,12 @@ from types import SimpleNamespace
 import app.main as main_module
 from app.core.database import engine
 from app.services.vector_store import vector_store
+from app.services.embedder import embedder
 
 
 @pytest.mark.asyncio
 async def test_database_failure_is_not_reported_as_healthy(client, monkeypatch):
+    monkeypatch.setattr(embedder, "get_embedding_dimension", lambda: 384)
     def fail():
         raise ConnectionError('test database unavailable')
 
@@ -18,6 +20,7 @@ async def test_database_failure_is_not_reported_as_healthy(client, monkeypatch):
 
 @pytest.mark.asyncio
 async def test_vector_failure_is_not_reported_as_healthy(client, monkeypatch):
+    monkeypatch.setattr(embedder, "get_embedding_dimension", lambda: 384)
     def fail():
         raise ConnectionError('test vector store unavailable')
 

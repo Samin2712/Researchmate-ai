@@ -1,0 +1,14 @@
+node_modules
+venv
+.env
+.env.*
+__pycache__
+data
+uploads
+logs
+*.db
+*.log
+.pip-cache
+dist
+test-results
+playwright-report

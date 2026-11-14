@@ -279,7 +279,7 @@ docker-compose up -d
 cp .env.example .env.production
 
 # Build and start
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.prod.yml up -d --build
 ```
 
 See [DOCKER_SETUP_GUIDE.md](DOCKER_SETUP_GUIDE.md#production-deployment) for complete guide.

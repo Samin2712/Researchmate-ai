@@ -13,6 +13,12 @@ import os
 
 from app.core.config import settings
 from app.api.v1 import auth, documents, chat
+from app.api.v1.collections import (
+    router as collections_router,
+    tags_router,
+    doc_tags_router,
+    bibtex_router,
+)
 from app.core.database import engine, Base
 
 # Configure logging
@@ -41,7 +47,8 @@ async def lifespan(app: FastAPI):
     
     # Create database tables
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+        from app.core.schema import upgrade_schema
+        await conn.run_sync(upgrade_schema)
         # Background tasks do not survive process termination. Do not leave papers
         # claiming to process forever after a restart (deploy with one worker).
         from app.models.document import Document, DocumentStatus
@@ -157,6 +164,30 @@ app.include_router(
     chat.router,
     prefix=f"{settings.API_V1_PREFIX}/chat",
     tags=["Chat"]
+)
+
+app.include_router(
+    collections_router,
+    prefix=f"{settings.API_V1_PREFIX}/collections",
+    tags=["Collections"]
+)
+
+app.include_router(
+    tags_router,
+    prefix=f"{settings.API_V1_PREFIX}/tags",
+    tags=["Tags"]
+)
+
+app.include_router(
+    doc_tags_router,
+    prefix=f"{settings.API_V1_PREFIX}/documents",
+    tags=["Document Tags"]
+)
+
+app.include_router(
+    bibtex_router,
+    prefix=f"{settings.API_V1_PREFIX}/documents",
+    tags=["BibTeX"]
 )
 
 
