@@ -26,6 +26,7 @@ class User(Base):
     collections = relationship("Collection", back_populates="owner", cascade="all, delete-orphan")
     tags = relationship("Tag", back_populates="owner", cascade="all, delete-orphan")
     evidence_notes = relationship("EvidenceNote", back_populates="owner", cascade="all, delete-orphan")
+    analysis_runs = relationship("AnalysisRun", back_populates="user", cascade="all, delete-orphan")
     profile = relationship('UserProfile', uselist=False, lazy='selectin', cascade='all, delete-orphan')
 
     @property

@@ -10,6 +10,7 @@ import {
   Sparkles,
   UserRound,
   BookmarkPlus,
+  GitCompare,
 } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
@@ -21,6 +22,7 @@ const links = [
   { to: '/', label: 'Overview', icon: LayoutDashboard },
   { to: '/library', label: 'Paper library', icon: BookOpen },
   { to: '/chat', label: 'Research chat', icon: MessagesSquare },
+  { to: '/analysis', label: 'Analysis', icon: GitCompare },
   { to: '/graph', label: 'Knowledge map', icon: Network },
 ]
 export function Brand() {

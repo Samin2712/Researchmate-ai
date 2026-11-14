@@ -212,6 +212,7 @@ $RECYCLE.BIN/
 # ============================================
 
 # Local AI-agent installations and machine-specific configuration
+# Keep both prompt-folder spellings local (the workspace uses agent-prompts).
 /agent-prompts/
 /agent-prompt/
 .agent/

@@ -5,6 +5,7 @@ const names: Record<string, string> = {
   '/library': 'Paper library',
   '/chat': 'Research chat',
   '/graph': 'Knowledge map',
+  '/analysis': 'Research analysis',
   '/settings': 'Settings',
   '/profile': 'My profile',
   '/about': 'About ResearchMate',

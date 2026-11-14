@@ -4,6 +4,7 @@ from .document import Document, Chunk, Collection, Tag
 from .chat import ChatSession, ChatMessage
 from .vector import DocumentVector
 from .evidence import EvidenceNote
+from .analysis import AnalysisRun, ReviewEdit, AnalysisKind, AnalysisStatus
 
 __all__ = [
     "User",
@@ -15,4 +16,8 @@ __all__ = [
     "ChatMessage",
     "DocumentVector",
     "EvidenceNote",
+    "AnalysisRun",
+    "ReviewEdit",
+    "AnalysisKind",
+    "AnalysisStatus",
 ]

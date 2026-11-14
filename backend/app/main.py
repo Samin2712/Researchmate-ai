@@ -12,7 +12,7 @@ from sqlalchemy import text, update
 import os
 
 from app.core.config import settings
-from app.api.v1 import auth, documents, chat, evidence
+from app.api.v1 import auth, documents, chat, evidence, analysis
 from app.api.v1.collections import (
     router as collections_router,
     tags_router,
@@ -56,6 +56,12 @@ async def lifespan(app: FastAPI):
             Document.status.in_([DocumentStatus.PROCESSING, DocumentStatus.UPLOADING])
         ).values(status=DocumentStatus.FAILED,
                  error_message='Processing was interrupted by a server restart. Retry this paper, or upload it again if the original file is unavailable.'))
+
+        from app.models.analysis import AnalysisRun, AnalysisStatus
+        await conn.execute(update(AnalysisRun).where(AnalysisRun.status.in_([
+            AnalysisStatus.PENDING, AnalysisStatus.EXTRACTING, AnalysisStatus.SYNTHESIZING
+        ])).values(status=AnalysisStatus.FAILED, stage='Interrupted; retry from setup',
+                  error_message='Server restarted during analysis. Start a new run to retry.'))
 
     if os.environ.get('RENDER') and engine.url.get_backend_name() == 'sqlite':
         logger.warning('SQLite on Render is temporary unless stored on an attached persistent disk. Set DATABASE_URL to a managed PostgreSQL database to keep accounts after restarts.')
@@ -194,6 +200,12 @@ app.include_router(
     evidence.router,
     prefix=f"{settings.API_V1_PREFIX}/evidence",
     tags=["Evidence"]
+)
+
+app.include_router(
+    analysis.router,
+    prefix=f"{settings.API_V1_PREFIX}",
+    tags=["Analysis"]
 )
 
 
