@@ -71,3 +71,15 @@ describe('formatCitation with BibTeX style', () => {
     expect(citation).toContain('@article{he_2016_deep,')
   })
 })
+
+
+it('matches server keys for multiword structured surnames and punctuation', () => {
+  const bib = formatBibTeX({ title: '«Étude» of methods', authors: 'Legacy text', year: 2024, structured_authors: [{ family: 'de la Cruz', given: 'Ana' }] })
+  expect(bib).toContain('@article{delacruz_2024_tude,')
+  expect(bib).toContain('author = {de la Cruz, Ana}')
+})
+
+it('uses a valid unknown key for non-Latin author metadata', () => {
+  const bib = formatBibTeX({ title: '研究', authors: null, year: null, structured_authors: [{ family: '研究', given: '' }] })
+  expect(bib).toContain('@article{unknown_nd_untitled,')
+})

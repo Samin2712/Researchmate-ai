@@ -38,19 +38,14 @@ export function formatBibTeX(
   if (!citationKey) {
     const firstAuthorRaw = document.structured_authors?.[0]?.family || document.authors?.split(/[,;]|\band\b/i)[0]?.trim() || 'unknown'
     // Take the last word as "last name", strip to ASCII lowercase
-    const lastNameRaw = firstAuthorRaw.split(/\s+/).pop() || firstAuthorRaw
+    const lastNameRaw = document.structured_authors?.[0]?.family || firstAuthorRaw.split(/\s+/).pop() || firstAuthorRaw
     const lastName = lastNameRaw
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .replace(/[^a-z0-9]/gi, '')
-      .toLowerCase()
+      .toLowerCase() || 'unknown'
     const year = document.year?.toString() || 'nd'
-    const firstTitleWord = (document.title || '')
-      .split(/\s+/)[0]
-      ?.normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9]/gi, '')
-      .toLowerCase() || 'untitled'
+    const firstTitleWord = document.title?.match(/[a-zA-Z0-9]+/)?.[0]?.toLowerCase() || 'untitled'
     citationKey = `${lastName}_${year}_${firstTitleWord}`
   }
 
