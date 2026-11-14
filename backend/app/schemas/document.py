@@ -78,7 +78,6 @@ class DocumentResponse(DocumentBase):
     """Document response schema"""
     id: int
     user_id: int
-    file_path: str
     file_size: Optional[int] = None
     page_count: Optional[int] = None
     status: DocumentStatus

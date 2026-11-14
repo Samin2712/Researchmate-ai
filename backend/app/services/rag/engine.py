@@ -20,10 +20,10 @@ class RAGEngine:
     Retrieval-Augmented Generation Engine
     Answers questions by retrieving relevant context and generating responses
     """
-    
+
     def __init__(self):
         self.system_prompt = self._build_system_prompt()
-    
+
     def _build_system_prompt(self) -> str:
         """Build the system prompt for the LLM"""
         return """You are ResearchMate AI, an expert research assistant specializing in academic papers.
@@ -49,7 +49,7 @@ Guidelines:
 - Include a brief takeaway and preserve training/test direction, units, uncertainty, and reported values exactly. Do not mix results from different experimental settings.
 
 Remember: Your answers should be trustworthy, verifiable, and helpful for academic research."""
-    
+
     async def retrieve_context(
         self,
         query: str,
@@ -60,14 +60,14 @@ Remember: Your answers should be trustworthy, verifiable, and helpful for academ
     ) -> List[Dict[str, Any]]:
         """
         Retrieve relevant context for a query
-        
+
         Args:
             query: User's question
             top_k: Number of chunks to retrieve
             user_id: Filter by user's documents
             document_ids: Filter by specific documents
             similarity_threshold: Minimum similarity score
-        
+
         Returns:
             List of relevant chunks with metadata
         """
@@ -81,14 +81,14 @@ Remember: Your answers should be trustworthy, verifiable, and helpful for academ
                 embedder.embed_query,
                 query
             )
-            
+
             # Build filters
             filters = {}
             if user_id:
                 filters["user_id"] = user_id
             if document_ids:
                 filters["document_id"] = {'$in': [str(document_id) for document_id in document_ids]}
-            
+
             # Search vector store
             results = await asyncio.to_thread(
                 vector_store.search,
@@ -96,18 +96,18 @@ Remember: Your answers should be trustworthy, verifiable, and helpful for academ
                 top_k=top_k or settings.TOP_K_RESULTS,
                 filters=filters if filters else None
             )
-            
+
             # Filter by similarity threshold
             threshold = settings.SIMILARITY_THRESHOLD if similarity_threshold is None else similarity_threshold
             filtered_results = [
                 r for r in results
                 if (1 - r['distance']) >= threshold  # Convert distance to similarity
             ]
-            
+
             logger.info(f"🔍 Retrieved {len(filtered_results)} relevant chunks (from {len(results)} total)")
-            
+
             return filtered_results
-        
+
         except Exception as e:
             logger.error(f"Context retrieval failed: {e}")
             raise RuntimeError("Document retrieval failed. Please check the search service and try again.") from e
@@ -146,42 +146,42 @@ Remember: Your answers should be trustworthy, verifiable, and helpful for academ
                           "authors": document.authors or "Unknown"}}
             for chunk, document in rows
         ]
-    
+
     def _format_context(self, chunks: List[Dict[str, Any]]) -> str:
         """Format retrieved chunks into context string"""
         if not chunks:
             return "No relevant context found."
-        
+
         context_parts = []
         for i, chunk in enumerate(chunks, 1):
             metadata = chunk['metadata']
             text = chunk['text']
             page = metadata.get('page_number', 'Unknown')
             title = metadata.get('title', 'Unknown Document')
-            
+
             context_parts.append(
                 f"[Source {i}] (Page {page} from \"{title}\")\n{text}\n"
             )
-        
+
         return "\n".join(context_parts)
-    
+
     def _extract_citations(self, answer: str, chunks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Extract source citations from the answer"""
         citations = []
-        
+
         # Find [Page X] patterns
         page_pattern = r'\[Page (\d+)\]'
         mentioned_pages = set(re.findall(page_pattern, answer))
-        
+
         # Find [Source X] patterns
         source_pattern = r'(?:\[|,\s*)Source (\d+)\]'
         mentioned_sources = set(re.findall(source_pattern, answer))
-        
+
         # Map sources back to documents
         for i, chunk in enumerate(chunks, 1):
             metadata = chunk['metadata']
             page = metadata.get('page_number', 'Unknown')
-            
+
             # Check if this source or page was mentioned
             if str(i) in mentioned_sources or str(page) in mentioned_pages:
                 citations.append({
@@ -190,34 +190,34 @@ Remember: Your answers should be trustworthy, verifiable, and helpful for academ
                     "title": metadata.get('title', 'Unknown'),
                     "authors": metadata.get('authors', 'Unknown'),
                     "page_number": page,
-                    "chunk_text": chunk['text'][:200] + "...",  # Preview
+                    "chunk_text": chunk['text'],  # Exact extraction snapshot, never append invented ellipses
                     "similarity_score": round(1 - chunk['distance'], 3)
                 })
-        
+
         return citations
-    
+
     def _calculate_confidence(self, chunks: List[Dict[str, Any]], answer: str) -> float:
         """Calculate confidence score for the answer"""
         if not chunks:
             return 0.0
-        
+
         # Factors for confidence:
         # 1. Average similarity of retrieved chunks
         avg_similarity = sum(1 - c['distance'] for c in chunks) / len(chunks)
-        
+
         # 2. Number of chunks above threshold
         high_quality_chunks = sum(1 for c in chunks if (1 - c['distance']) > 0.8)
         chunk_quality_score = high_quality_chunks / len(chunks)
-        
+
         # 3. Answer contains citations (good sign)
         has_citations = '[Page' in answer or '[Source' in answer
         citation_bonus = 0.1 if has_citations else 0.0
-        
+
         # Combine factors
         confidence = (avg_similarity * 0.6 + chunk_quality_score * 0.3) + citation_bonus
-        
+
         return round(min(confidence, 1.0), 2)
-    
+
     async def answer_question(
         self,
         question: str,
@@ -227,13 +227,13 @@ Remember: Your answers should be trustworthy, verifiable, and helpful for academ
     ) -> Dict[str, Any]:
         """
         Answer a question using RAG
-        
+
         Args:
             question: User's question
             user_id: User ID for filtering documents
             document_ids: Specific documents to search
             conversation_history: Previous Q&A for context
-        
+
         Returns:
             Answer with sources and metadata
         """
@@ -244,7 +244,7 @@ Remember: Your answers should be trustworthy, verifiable, and helpful for academ
                 user_id=user_id,
                 document_ids=document_ids
             )
-            
+
             if not chunks:
                 return {
                     "answer": "I couldn't find any relevant information in the uploaded documents to answer this question. Please make sure you've uploaded the relevant research papers.",
@@ -252,29 +252,29 @@ Remember: Your answers should be trustworthy, verifiable, and helpful for academ
                     "confidence": 0.0,
                     "chunks_retrieved": 0
                 }
-            
+
             # Step 2: Format context
             context = self._format_context(chunks)
-            
+
             # Step 3: Build prompt with conversation history
             prompt = self._build_prompt(question, context, conversation_history)
-            
+
             # Step 4: Generate answer
             logger.info(f"💬 Generating answer for: {question[:100]}...")
-            
+
             answer = await llm_service.generate(
                 prompt=prompt,
                 system_prompt=self.system_prompt,
                 temperature=0.7,
                 max_tokens=2000
             )
-            
+
             # Step 5: Extract citations and calculate confidence
             citations = self._extract_citations(answer, chunks)
             confidence = self._calculate_confidence(chunks, answer)
-            
+
             logger.info(f"✅ Answer generated with {len(citations)} citations (confidence: {confidence})")
-            
+
             return {
                 "answer": answer,
                 "sources": citations,
@@ -282,7 +282,7 @@ Remember: Your answers should be trustworthy, verifiable, and helpful for academ
                 "chunks_retrieved": len(chunks),
                 "provider": llm_service.get_provider_info()['provider']
             }
-        
+
         except Exception as e:
             logger.error(f"Failed to answer question: {e}")
             return {
@@ -292,7 +292,7 @@ Remember: Your answers should be trustworthy, verifiable, and helpful for academ
                 "chunks_retrieved": 0,
                 "error": str(e)
             }
-    
+
     async def stream_answer(
         self,
         question: str,
@@ -302,7 +302,7 @@ Remember: Your answers should be trustworthy, verifiable, and helpful for academ
     ) -> AsyncIterator[Dict[str, Any]]:
         """
         Answer a question with streaming response
-        
+
         Yields chunks of the answer as they're generated
         """
         try:
@@ -312,14 +312,14 @@ Remember: Your answers should be trustworthy, verifiable, and helpful for academ
                 user_id=user_id,
                 document_ids=document_ids
             )
-            
+
             # Send metadata first
             yield {
                 "type": "metadata",
                 "chunks_retrieved": len(chunks),
                 "confidence": self._calculate_confidence(chunks, "") if chunks else 0.0
             }
-            
+
             if not chunks:
                 yield {
                     "type": "answer",
@@ -327,11 +327,11 @@ Remember: Your answers should be trustworthy, verifiable, and helpful for academ
                     "done": True
                 }
                 return
-            
+
             # Step 2: Format context and build prompt
             context = self._format_context(chunks)
             prompt = self._build_prompt(question, context, conversation_history)
-            
+
             # Step 3: Stream answer
             full_answer = ""
             async for chunk in llm_service.stream_generate(
@@ -346,7 +346,7 @@ Remember: Your answers should be trustworthy, verifiable, and helpful for academ
                     "content": chunk,
                     "done": False
                 }
-            
+
             # Step 4: Send final metadata with citations
             citations = self._extract_citations(full_answer, chunks)
             yield {
@@ -354,20 +354,20 @@ Remember: Your answers should be trustworthy, verifiable, and helpful for academ
                 "content": "",
                 "done": True
             }
-            
+
             yield {
                 "type": "sources",
                 "sources": citations,
                 "confidence": self._calculate_confidence(chunks, full_answer)
             }
-        
+
         except Exception as e:
             logger.error(f"Streaming failed: {e}")
             yield {
                 "type": "error",
                 "error": str(e)
             }
-    
+
     def _build_prompt(
         self,
         question: str,
@@ -376,19 +376,19 @@ Remember: Your answers should be trustworthy, verifiable, and helpful for academ
     ) -> str:
         """Build the complete prompt for the LLM"""
         prompt_parts = []
-        
+
         # Add conversation history if available
         if conversation_history:
             prompt_parts.append("Previous conversation:")
             for entry in conversation_history[-3:]:  # Last 3 exchanges
                 prompt_parts.append(f"Q: {entry.get('question', '')}")
                 prompt_parts.append(f"A: {entry.get('answer', '')}\n")
-        
+
         # Add context
         prompt_parts.append("Context from research papers:")
         prompt_parts.append(context)
         prompt_parts.append("")
-        
+
         # Add current question
         prompt_parts.append(f"Question: {question}")
         prompt_parts.append("")
@@ -400,7 +400,7 @@ Remember: Your answers should be trustworthy, verifiable, and helpful for academ
         prompt_parts.append("- Use compact Markdown tables with one row per line and methods side by side; cite shared sources once below each table")
         prompt_parts.append("")
         prompt_parts.append("Answer:")
-        
+
         return "\n".join(prompt_parts)
 
 

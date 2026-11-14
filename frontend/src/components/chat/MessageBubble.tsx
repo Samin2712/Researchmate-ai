@@ -1,10 +1,11 @@
 import { memo } from 'react'
-import { BookOpen, Sparkles, UserRound } from 'lucide-react'
+import { BookOpen, Sparkles, UserRound, ExternalLink } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { motion } from 'motion/react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { citationLinks, normalizeAnswerMarkdown } from './answerFormatting'
+import { useEvidenceStore } from '../../store/evidence'
 import type { Message } from '../../types'
 
 export const MessageBubble = memo(function MessageBubble({
@@ -17,6 +18,14 @@ export const MessageBubble = memo(function MessageBubble({
   const assistant = message.role === 'assistant'
   const sourcePrefix = `message-${message.id}`
   const confidence = message.confidence_score == null ? null : Math.round(message.confidence_score)
+  const openSourcePanel = useEvidenceStore(state => state.openSourcePanel)
+
+  const handleSourceClick = (index: number) => {
+    if (message.sources && message.sources[index]) {
+      openSourcePanel(message.sources[index], message.id, index)
+    }
+  }
+
   return (
     <motion.article
       className={`message ${assistant ? 'assistant' : 'user'}`}
@@ -46,10 +55,18 @@ export const MessageBubble = memo(function MessageBubble({
                 </div>
               ),
               a: ({ href, children, ...props }) => href?.startsWith(`#${sourcePrefix}-source-`) ? (
-                <a {...props} href={href} className="answer-citation" onClick={() => {
-                  const source = document.getElementById(href.slice(1))
-                  if (source instanceof HTMLDetailsElement) source.open = true
-                }}>{children}</a>
+                <a
+                  {...props}
+                  href={href}
+                  className="answer-citation"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    const sourceIndex = parseInt(href.split('-').pop() || '1') - 1
+                    handleSourceClick(sourceIndex)
+                  }}
+                >
+                  {children}
+                </a>
               ) : <a {...props} href={href}>{children}</a>,
             }}
           >
@@ -70,9 +87,20 @@ export const MessageBubble = memo(function MessageBubble({
                     <span className="source-number">{index + 1}</span>
                     <span>
                       {source.title || 'Source paper'}
-                      {source.page_number ? <small>Page {source.page_number}</small> : null}
+                      {source.page_number ? <small>Page {source.page_label || source.page_number}</small> : null}
                     </span>
                   </summary>
+                    <button
+                      className="source-view-btn"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        handleSourceClick(index)
+                      }}
+                      aria-label="View source in context"
+                      title="View source in context"
+                    >
+                      <ExternalLink size={14} />
+                    </button>
                   {source.chunk_text && <blockquote>{source.chunk_text}</blockquote>}
                   <Link to={`/library?document=${source.document_id}`}>View paper details</Link>
                 </details>
@@ -82,8 +110,8 @@ export const MessageBubble = memo(function MessageBubble({
         )}
         {assistant && confidence != null && (
           <p className="confidence">
-            Retrieval confidence: {Math.max(0, Math.min(100, confidence))}%
-            <span>Check the sources before drawing conclusions.</span>
+            Retrieval signal: {Math.max(0, Math.min(100, confidence))}%
+            <span>This indicates retrieval relevance, not accuracy. Check sources before drawing conclusions.</span>
           </p>
         )}
       </div>

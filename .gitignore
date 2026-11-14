@@ -212,6 +212,8 @@ $RECYCLE.BIN/
 # ============================================
 
 # Local AI-agent installations and machine-specific configuration
+/agent-prompts/
+/agent-prompt/
 .agent/
 .agents/
 .codex/
@@ -375,3 +377,6 @@ site/
 
 # Isolated collection browser evidence
 collection-test-results/
+
+# Isolated source-verification browser artifacts
+evidence-test-results/

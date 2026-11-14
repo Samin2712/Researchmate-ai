@@ -9,11 +9,13 @@ import {
   Settings2,
   Sparkles,
   UserRound,
+  BookmarkPlus,
 } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../../store/auth'
 import { useUser } from '../../services/queries'
+import { useEvidenceStore } from '../../store/evidence'
 
 const links = [
   { to: '/', label: 'Overview', icon: LayoutDashboard },
@@ -36,10 +38,18 @@ export function Brand() {
 export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const { data: user } = useUser()
   const queryClient = useQueryClient()
+  const { openNotebook } = useEvidenceStore()
+
   const logout = () => {
     useAuth.getState().logout()
     queryClient.clear()
   }
+
+  const handleOpenNotebook = () => {
+    openNotebook()
+    onNavigate?.()
+  }
+
   return (
     <div className="sidebar-content">
       <NavLink to="/" className="brand-link" onClick={onNavigate} aria-label="ResearchMate AI home">
@@ -61,6 +71,10 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             <span>{label}</span>
           </NavLink>
         ))}
+        <button className="nav-link" onClick={handleOpenNotebook}>
+          <BookmarkPlus size={19} />
+          <span>Evidence notebook</span>
+        </button>
       </nav>
       <div className="sidebar-note">
         <Sparkles size={20} />

@@ -6,7 +6,9 @@ import Layout from './components/shared/Layout'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import { ErrorState, Loading } from './components/shared/Feedback'
+import { SourceVerificationPanel, SaveEvidenceDialog, EvidenceNotebook } from './components/evidence'
 import { useAuth, tokenExpiry } from './store/auth'
+import { useEvidenceStore } from './store/evidence'
 import { usePreferences } from './store/preferences'
 import { useUser } from './services/queries'
 import { errorMessage } from './services/api'
@@ -47,6 +49,14 @@ export default function App() {
   const token = useAuth((state) => state.token)
   const reduceMotion = usePreferences((state) => state.reduceMotion)
   const client = useQueryClient()
+  useEffect(() => {
+    const evidence = useEvidenceStore.getState()
+    evidence.closeSourcePanel()
+    evidence.cancelSaveEvidence()
+    evidence.closeNotebook()
+    evidence.setNotebookFilter(null)
+    evidence.setNotebookSearch('')
+  }, [token])
   useEffect(() => {
     if (!token) {
       client.clear()
@@ -101,6 +111,14 @@ export default function App() {
             />
           </Route>
         </Routes>
+        {/* Global evidence components */}
+        {token && (
+          <>
+            <SourceVerificationPanel />
+            <SaveEvidenceDialog />
+            <EvidenceNotebook />
+          </>
+        )}
       </Suspense>
     </MotionConfig>
   )

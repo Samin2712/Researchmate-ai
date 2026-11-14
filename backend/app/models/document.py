@@ -2,7 +2,7 @@
 Document database models
 """
 from sqlalchemy import (
-    Column, Integer, String, Text, DateTime, ForeignKey, Enum, Float, UniqueConstraint, JSON,
+    Column, Integer, String, Text, DateTime, ForeignKey, Enum, Float, UniqueConstraint, JSON, LargeBinary,
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -22,7 +22,7 @@ class DocumentStatus(str, enum.Enum):
 class Document(Base):
     """Research paper document model"""
     __tablename__ = "documents"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     title = Column(String, nullable=False)
@@ -32,11 +32,13 @@ class Document(Base):
     file_path = Column(String, nullable=False)
     file_size = Column(Integer, nullable=True)  # in bytes
     page_count = Column(Integer, nullable=True)
+    content_hash = Column(String, nullable=True)  # SHA256 hash for revision detection
+    pdf_content = Column(LargeBinary, nullable=True)  # Durable original on ephemeral hosts
     status = Column(Enum(DocumentStatus), default=DocumentStatus.UPLOADING)
     error_message = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-    
+
     # Extended citation metadata
     structured_authors = Column(JSON, nullable=True)
     doi = Column(String, nullable=True)
@@ -51,6 +53,7 @@ class Document(Base):
     # Relationships
     owner = relationship("User", back_populates="documents")
     chunks = relationship("Chunk", back_populates="document", cascade="all, delete-orphan")
+    evidence_notes = relationship("EvidenceNote", back_populates="document")
     collections = relationship(
         "Collection",
         secondary="collection_documents",
@@ -63,7 +66,7 @@ class Document(Base):
         back_populates="documents",
         lazy="select",
     )
-    
+
     def __repr__(self):
         return f"<Document {self.title}>"
 
@@ -71,18 +74,26 @@ class Document(Base):
 class Chunk(Base):
     """Document chunk for RAG"""
     __tablename__ = "chunks"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     document_id = Column(Integer, ForeignKey("documents.id", ondelete="CASCADE"), nullable=False)
     text = Column(Text, nullable=False)
-    page_number = Column(Integer, nullable=True)
+    page_number = Column(Integer, nullable=True)  # 1-based physical page index
+    page_label = Column(String, nullable=True)  # Display label (e.g., "iii", "A-3")
     chunk_index = Column(Integer, nullable=False)
     vector_id = Column(String, nullable=True, unique=True)  # ChromaDB ID
+
+    # Enhanced metadata for source verification
+    char_start = Column(Integer, nullable=True)  # Character position in page
+    char_end = Column(Integer, nullable=True)
+    bbox = Column(JSON, nullable=True)  # Bounding box coordinates {x, y, width, height}
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    
+
     # Relationships
     document = relationship("Document", back_populates="chunks")
-    
+    evidence_notes = relationship("EvidenceNote", back_populates="chunk")
+
     def __repr__(self):
         return f"<Chunk {self.id} from Document {self.document_id}>"
 
@@ -103,6 +114,7 @@ class Collection(Base):
     )
 
     owner = relationship("User", back_populates="collections")
+    evidence_notes = relationship("EvidenceNote", back_populates="collection")
     documents = relationship(
         "Document",
         secondary="collection_documents",

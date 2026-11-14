@@ -9,6 +9,7 @@ export interface User {
   research_interests?: string | null
   avatar_url?: string | null
 }
+
 export interface Document {
   id: number
   user_id: number
@@ -18,20 +19,79 @@ export interface Document {
   abstract: string | null
   file_size: number | null
   page_count: number | null
+  content_hash?: string | null
   status: 'uploading' | 'processing' | 'completed' | 'failed'
   error_message: string | null
   created_at: string
   updated_at: string | null
 }
+
+export interface QuoteBounds {
+  start: number
+  end: number
+}
+
 export interface Source {
   source_number?: number
   document_id: number | string
+  chunk_id?: number
   title: string
   authors?: string
   page_number?: number | string | null
+  page_label?: string | null
   chunk_text?: string
   similarity_score?: number
+  char_start?: number
+  char_end?: number
+  bbox?: {
+    x: number
+    y: number
+    width: number
+    height: number
+  }
 }
+
+export interface EvidenceNote {
+  id: number
+  user_id: number
+  collection_id: number | null
+  document_id: number | null
+  chunk_id: number | null
+  page_number: number | null
+  page_label: string | null
+  source_quote: string
+  document_title: string | null
+  document_authors: string | null
+  title: string | null
+  note: string | null
+  tags: string[] | null
+  quote_bounds: QuoteBounds | null
+  content_hash: string | null
+  is_stale: number
+  created_at: string
+  updated_at: string | null
+}
+
+export interface EvidenceNoteCreate {
+  document_id: number
+  chunk_id?: number | null
+  page_number?: number | null
+  page_label?: string | null
+  source_quote: string
+  quote_bounds?: QuoteBounds | null
+  title?: string | null
+  note?: string | null
+  tags?: string[] | null
+  collection_id?: number | null
+}
+
+export interface EvidenceNoteUpdate {
+  title?: string | null
+  note?: string | null
+  tags?: string[] | null
+  collection_id?: number | null
+}
+
 export interface Message {
   /** Local state for a response interrupted before the server completed it. */
   incomplete?: boolean
@@ -43,6 +103,7 @@ export interface Message {
   confidence_score: number | null
   created_at: string
 }
+
 export interface Session {
   id: number
   user_id: number
@@ -50,11 +111,13 @@ export interface Session {
   created_at: string
   updated_at: string | null
 }
+
 export interface ChatRequest {
   message: string
   session_id?: number
   document_ids?: number[]
 }
+
 export type StreamEvent =
   | { type: 'session'; session_id: number }
   | { type: 'answer'; content: string; done?: boolean }

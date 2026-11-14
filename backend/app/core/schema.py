@@ -11,10 +11,17 @@ def upgrade_schema(connection):
     if inspector.has_table("documents"):
         existing = {column["name"] for column in inspector.get_columns("documents")}
         for name in ("doi", "journal", "volume", "issue", "pages", "publisher", "url",
-                     "document_type", "structured_authors"):
+                     "document_type", "structured_authors", "content_hash", "pdf_content"):
             if name not in existing:
                 sql_type = Document.__table__.c[name].type.compile(dialect=connection.dialect)
                 connection.exec_driver_sql(f'ALTER TABLE documents ADD COLUMN {name} {sql_type}')
+    from app.models.document import Chunk
+    if inspector.has_table("chunks"):
+        existing = {column["name"] for column in inspector.get_columns("chunks")}
+        for name in ("page_label", "char_start", "char_end", "bbox"):
+            if name not in existing:
+                sql_type = Chunk.__table__.c[name].type.compile(dialect=connection.dialect)
+                connection.exec_driver_sql(f'ALTER TABLE chunks ADD COLUMN {name} {sql_type}')
     Base.metadata.create_all(connection)
     # Repair tables created by the original 0002 migration, which omitted these timestamps.
     table, name = "tags", "created_at"

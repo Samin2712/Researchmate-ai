@@ -38,6 +38,11 @@ with TestClient(app) as client:
     assert response.status_code == 201, response.text
     papers = client.get('/api/v1/documents', headers=headers).json()['documents']
     assert papers[0]['status'] == 'completed', papers
+    evidence = client.post('/api/v1/evidence/notes', headers=headers, json={
+        'document_id': papers[0]['id'], 'page_number': 1,
+        'source_quote': 'This research studies language learning.', 'note': 'Persistent evidence note',
+    })
+    assert evidence.status_code == 201, evidence.text
     # Create an interrupted task to verify recovery on the next startup.
     import asyncio
     from app.core.database import AsyncSessionLocal
@@ -63,6 +68,10 @@ with TestClient(app) as client:
     assert interrupted['status'] == 'failed', papers
     assert 'server restart' in interrupted['error_message']
     completed = next(p for p in papers if p['status'] == 'completed')
+    notes = client.get('/api/v1/evidence/notes', headers=headers).json()['items']
+    assert notes[0]['note'] == 'Persistent evidence note'
+    assert notes[0]['source_quote'] == 'This research studies language learning.'
+    assert client.get('/api/v1/evidence/documents/' + str(completed['id']) + '/pdf', headers=headers).content.startswith(b'%PDF')
     from app.services.vector_store import vector_store
     results = vector_store.search([1.0] + [0.0] * 767, filters={'user_id': '1', 'document_id': {'$in': [str(completed['id'])]}})
     assert results and 'language learning' in results[0]['text']

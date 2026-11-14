@@ -171,7 +171,9 @@ test('comparison tables and page citations remain readable (controlled API)', as
   await expect(citation).toBeVisible()
   await answer.getByRole('table').screenshot({ path: `test-results/answer-table-${page.viewportSize()?.width}.png` })
   await citation.click()
-  await expect(answer.locator('details')).toHaveAttribute('open', '')
+  await expect(page.getByRole('dialog', { name: 'Source verification' })).toBeVisible()
+  await page.getByRole('button', { name: 'Return to chat' }).click()
+  await answer.locator('summary').click()
   await expect(answer.getByText(source.chunk_text, { exact: true })).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
   await page.screenshot({ path: `test-results/answer-formatting-${page.viewportSize()?.width}.png`, fullPage: true })
@@ -210,7 +212,7 @@ test('registration → upload → streaming chat → history → export → logo
     'main finding',
   )
   await expect(page).toHaveURL(/session=1/)
-  await expect(page.getByText('Retrieval confidence: 92%')).toBeVisible()
+  await expect(page.getByText('Retrieval signal: 92%', { exact: false })).toBeVisible()
   await page
     .getByText(paper.title, { exact: false })
     .filter({ has: page.locator('small') })

@@ -12,7 +12,7 @@ from sqlalchemy import text, update
 import os
 
 from app.core.config import settings
-from app.api.v1 import auth, documents, chat
+from app.api.v1 import auth, documents, chat, evidence
 from app.api.v1.collections import (
     router as collections_router,
     tags_router,
@@ -40,11 +40,11 @@ async def lifespan(app: FastAPI):
     """Startup and shutdown events"""
     # Startup
     logger.info("Starting ResearchMate AI...")
-    
+
     # Create upload directory
     Path(settings.UPLOAD_DIR).mkdir(parents=True, exist_ok=True)
     Path(settings.LOG_FILE).parent.mkdir(parents=True, exist_ok=True)
-    
+
     # Create database tables
     async with engine.begin() as conn:
         from app.core.schema import upgrade_schema
@@ -59,12 +59,12 @@ async def lifespan(app: FastAPI):
 
     if os.environ.get('RENDER') and engine.url.get_backend_name() == 'sqlite':
         logger.warning('SQLite on Render is temporary unless stored on an attached persistent disk. Set DATABASE_URL to a managed PostgreSQL database to keep accounts after restarts.')
-    
+
     logger.info("Database tables created")
     logger.info("ResearchMate AI started successfully!")
-    
+
     yield
-    
+
     # Shutdown
     logger.info("Shutting down ResearchMate AI...")
     await engine.dispose()
@@ -188,6 +188,12 @@ app.include_router(
     bibtex_router,
     prefix=f"{settings.API_V1_PREFIX}/documents",
     tags=["BibTeX"]
+)
+
+app.include_router(
+    evidence.router,
+    prefix=f"{settings.API_V1_PREFIX}/evidence",
+    tags=["Evidence"]
 )
 
 

@@ -38,7 +38,7 @@ def validate_file(file: UploadFile) -> None:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Only PDF files are allowed. Got: {file_ext}"
         )
-    
+
     # Note: File size check is done during upload
 
 
@@ -54,7 +54,7 @@ async def _process_document(document_id: int, file_path: str, user_id: int, db: 
     """Background task to process uploaded document and generate embeddings"""
     try:
         logger.info(f"Processing document {document_id} through ingestion pipeline")
-        
+
         # Run through complete ingestion pipeline (PDF → Text → Chunks → Embeddings → Vector Store)
         result = await ingestion_pipeline.process_document(
             file_path=file_path,
@@ -62,13 +62,13 @@ async def _process_document(document_id: int, file_path: str, user_id: int, db: 
             user_id=str(user_id),
             db=db
         )
-        
+
         # Update document in database
         doc_result = await db.execute(
             select(Document).where(Document.id == document_id)
         )
         document = doc_result.scalar_one_or_none()
-        
+
         if document and result.get('success'):
             # Update with extracted metadata
             metadata = result.get('metadata', {})
@@ -78,8 +78,10 @@ async def _process_document(document_id: int, file_path: str, user_id: int, db: 
             document.abstract = metadata.get("abstract")
             document.page_count = result.get('pages_processed', 0)
             document.file_size = Path(file_path).stat().st_size
+            from app.services.evidence import refresh_revision
+            await refresh_revision(db, document)
             document.status = DocumentStatus.COMPLETED
-            
+
             await db.commit()
             logger.info(f"✅ Document {document_id} processed: {result.get('chunks_created')} chunks created")
         elif document:
@@ -88,17 +90,17 @@ async def _process_document(document_id: int, file_path: str, user_id: int, db: 
             document.error_message = result.get('error', 'Unknown error')
             await db.commit()
             logger.error(f"❌ Document {document_id} processing failed: {result.get('error')}")
-        
+
     except Exception as e:
         logger.error(f"❌ Error processing document {document_id}: {e}")
         await db.rollback()
-        
+
         # Update document with error status
         result = await db.execute(
             select(Document).where(Document.id == document_id)
         )
         document = result.scalar_one_or_none()
-        
+
         if document:
             document.status = DocumentStatus.FAILED
             document.error_message = str(e)
@@ -114,20 +116,20 @@ async def upload_document(
 ):
     """
     Upload a PDF document
-    
+
     The document will be processed in the background to extract text and metadata
     """
     # Validate file
     validate_file(file)
-    
+
     # Generate unique filename
     file_ext = Path(file.filename).suffix
     unique_filename = f"{uuid.uuid4()}{file_ext}"
     file_path = Path(settings.UPLOAD_DIR) / str(current_user.id) / unique_filename
-    
+
     # Create user directory if it doesn't exist
     file_path.parent.mkdir(parents=True, exist_ok=True)
-    
+
     # Save file
     try:
         size = 0
@@ -152,7 +154,7 @@ async def upload_document(
         )
     finally:
         file.file.close()
-    
+
     # Check file size
     file_size = file_path.stat().st_size
     if file_size > settings.MAX_UPLOAD_SIZE:
@@ -161,22 +163,23 @@ async def upload_document(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"File too large. Maximum size is {settings.MAX_UPLOAD_SIZE / 1024 / 1024}MB"
         )
-    
+
     # Create document record
     document = Document(
         user_id=current_user.id,
         title=file.filename,  # Will be updated after processing
         file_path=str(file_path),
+        pdf_content=file_path.read_bytes(),
         status=DocumentStatus.PROCESSING
     )
-    
+
     db.add(document)
     await db.commit()
     await db.refresh(document)
-    
+
     # Process document in background (with embeddings)
     background_tasks.add_task(process_document_task, document.id, str(file_path), current_user.id)
-    
+
     return document
 
 
@@ -196,11 +199,19 @@ async def retry_document(
     if document.status != DocumentStatus.FAILED:
         raise HTTPException(409, 'Only failed documents can be retried.')
     if not Path(document.file_path).is_file():
-        raise HTTPException(409, 'The original PDF is no longer on the server. Delete this entry and upload the PDF again.')
+        if document.pdf_content is None:
+            raise HTTPException(409, 'The original PDF is no longer on the server. Delete this entry and upload the PDF again.')
+        from app.services.evidence import pdf_path
+        restored = pdf_path(document)
+        restored.parent.mkdir(parents=True, exist_ok=True)
+        restored.write_bytes(document.pdf_content)
     # A failed attempt may have left index entries or relational chunks behind.
     from sqlalchemy import delete
     from app.models.document import Chunk
     await ingestion_pipeline.delete_document_embeddings(str(document_id))
+    from app.models import EvidenceNote
+    from sqlalchemy import update
+    await db.execute(update(EvidenceNote).where(EvidenceNote.document_id == document_id).values(chunk_id=None, is_stale=1))
     await db.execute(delete(Chunk).where(Chunk.document_id == document_id))
     document.status = DocumentStatus.PROCESSING
     document.error_message = None
@@ -305,7 +316,7 @@ async def get_document(
         )
     )
     document = result.scalar_one_or_none()
-    
+
     if not document:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -341,18 +352,18 @@ async def update_document(
         )
     )
     document = result.scalar_one_or_none()
-    
+
     if not document:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Document not found"
         )
-    
+
     # Update fields
     update_data = document_update.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(document, field, value)
-    
+
     await db.commit()
     await db.refresh(document)
 
@@ -384,20 +395,20 @@ async def delete_document(
         )
     )
     document = result.scalar_one_or_none()
-    
+
     if not document:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Document not found"
         )
-    
+
     # Delete embeddings from vector store
     try:
         await ingestion_pipeline.delete_document_embeddings(str(document_id))
         logger.info(f"🗑️  Deleted embeddings for document {document_id}")
     except Exception as e:
         logger.warning(f"Failed to delete embeddings: {e}")
-    
+
     # Delete file from disk
     try:
         file_path = Path(document.file_path)
@@ -405,10 +416,10 @@ async def delete_document(
             file_path.unlink()
     except Exception as e:
         logger.error(f"Error deleting file {document.file_path}: {e}")
-    
+
     # Delete from database (chunks will be cascade deleted)
     await db.delete(document)
     await db.commit()
-    
+
     logger.info(f"✅ Deleted document {document_id}")
     return None
