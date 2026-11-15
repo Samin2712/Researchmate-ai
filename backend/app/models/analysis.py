@@ -2,7 +2,7 @@
 Analysis run models for comparison matrix and literature review.
 """
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, JSON, Enum
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, JSON, Enum, UniqueConstraint
 from sqlalchemy.orm import relationship
 import enum
 
@@ -13,6 +13,8 @@ class AnalysisKind(str, enum.Enum):
     """Type of analysis run."""
     COMPARISON = "comparison"
     LITERATURE_REVIEW = "literature_review"
+    GAP_ANALYSIS = "gap_analysis"
+    DISAGREEMENT = "disagreement"
 
 
 class AnalysisStatus(str, enum.Enum):
@@ -64,6 +66,7 @@ class AnalysisRun(Base):
     # Relationships
     user = relationship("User", back_populates="analysis_runs")
     review_edits = relationship("ReviewEdit", back_populates="analysis_run", cascade="all, delete-orphan")
+    candidate_reviews = relationship("CandidateReviewState", back_populates="analysis_run", cascade="all, delete-orphan")
 
 
 class ReviewEdit(Base):
@@ -91,3 +94,60 @@ class ReviewEdit(Base):
     # Relationships
     analysis_run = relationship("AnalysisRun", back_populates="review_edits")
     user = relationship("User")
+
+
+class CandidateReviewState(Base):
+    """
+    User-owned review state for individual gap candidates (saved, dismissed, comments).
+    Ensures clear uniqueness per user, run, and candidate.
+    """
+    __tablename__ = "candidate_reviews"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    analysis_run_id = Column(Integer, ForeignKey("analysis_runs.id", ondelete="CASCADE"), nullable=False, index=True)
+    candidate_id = Column(String(100), nullable=False)
+    status = Column(String(50), nullable=True)  # "saved" | "dismissed" | None
+    comment = Column(Text, nullable=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "analysis_run_id", "candidate_id", name="uq_user_run_candidate"),
+    )
+
+    # Relationships
+    analysis_run = relationship("AnalysisRun", back_populates="candidate_reviews")
+    user = relationship("User")
+
+
+class ProjectBrief(Base):
+    """
+    User-saved project brief derived from a candidate research gap.
+    Preserves linked sources, bounded steps, and explicit assumptions.
+    """
+    __tablename__ = "project_briefs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    analysis_run_id = Column(Integer, ForeignKey("analysis_runs.id", ondelete="SET NULL"), nullable=True, index=True)
+    candidate_id = Column(String(100), nullable=False)
+
+    title = Column(String(500), nullable=False)
+    research_question = Column(Text, nullable=False)
+    method = Column(Text, nullable=False)
+    data_sources = Column(Text, nullable=False)
+    skills_required = Column(Text, nullable=True)
+    steps = Column(JSON, nullable=False)  # List[str]
+    success_criteria = Column(Text, nullable=False)
+    assumptions = Column(JSON, nullable=False)  # List[str]
+    time_budget = Column(String(100), nullable=True)
+    resource_budget = Column(String(100), nullable=True)
+    linked_source_ids = Column(JSON, nullable=False)  # List[str]
+
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    # Relationships
+    user = relationship("User")
+    analysis_run = relationship("AnalysisRun")

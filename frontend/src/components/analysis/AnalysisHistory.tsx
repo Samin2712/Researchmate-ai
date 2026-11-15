@@ -1,10 +1,25 @@
 /**
  * Analysis history list component.
  */
-import { FileText, GitCompare, AlertCircle, CheckCircle, Loader2, Trash2 } from 'lucide-react'
+import { FileText, GitCompare, AlertCircle, CheckCircle, Loader2, Trash2, Telescope, Scale } from 'lucide-react'
 import { useAnalysisRuns, useDeleteAnalysisRun } from '../../services/queries'
 import { Loading, ErrorState } from '../shared/Feedback'
 import type { AnalysisRun } from '../../types/analysis'
+
+const KIND_LABELS: Record<string, string> = {
+  comparison: 'Comparison Matrix',
+  literature_review: 'Literature Review',
+  gap_analysis: 'Research Gap Analysis',
+  disagreement: 'Disagreement Explorer',
+}
+
+function KindIcon({ kind }: { kind: string }) {
+  if (kind === 'comparison') return <GitCompare size={20} />
+  if (kind === 'literature_review') return <FileText size={20} />
+  if (kind === 'gap_analysis') return <Telescope size={20} />
+  if (kind === 'disagreement') return <Scale size={20} />
+  return <FileText size={20} />
+}
 
 interface AnalysisHistoryProps {
   onSelectRun: (run: AnalysisRun) => void
@@ -30,7 +45,7 @@ export function AnalysisHistory({ onSelectRun }: AnalysisHistoryProps) {
     return (
       <div className="empty-state">
         <p>No analyses yet</p>
-        <p className="muted">Start a comparison or literature review above</p>
+        <p className="muted">Start a comparison, literature review, gap analysis, or disagreement explorer above</p>
       </div>
     )
   }
@@ -48,11 +63,11 @@ export function AnalysisHistory({ onSelectRun }: AnalysisHistoryProps) {
           aria-label={`Open ${run.kind} analysis`}
         >
           <div className="analysis-history-icon">
-            {run.kind === 'comparison' ? <GitCompare size={20} /> : <FileText size={20} />}
+            <KindIcon kind={run.kind} />
           </div>
 
           <div className="analysis-history-content">
-            <h3>{run.kind === 'comparison' ? 'Comparison Matrix' : 'Literature Review'}</h3>
+            <h3>{KIND_LABELS[run.kind] ?? run.kind}</h3>
             <p className="analysis-history-meta">
               {run.document_ids.length} documents • {new Date(run.created_at).toLocaleDateString()}
               {typeof run.parameters?.research_question === 'string' && ` • ${String(run.parameters.research_question)}`}

@@ -212,7 +212,7 @@ $RECYCLE.BIN/
 # ============================================
 
 # Local AI-agent installations and machine-specific configuration
-# Keep both prompt-folder spellings local (the workspace uses agent-prompts).
+# Keep agent prompt instructions local and out of GitHub deployments.
 /agent-prompts/
 /agent-prompt/
 .agent/

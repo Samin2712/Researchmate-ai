@@ -13,6 +13,11 @@ from app.schemas.analysis import (
     AnalysisRunResponse,
     ReviewEditCreate,
     ReviewEditResponse,
+    CandidateReviewUpdate,
+    CandidateReviewResponse,
+    ProjectBriefCreate,
+    ProjectBriefResponse,
+    SaveRelationshipEvidenceRequest,
 )
 from app.services.analysis_service import AnalysisService
 
@@ -32,7 +37,7 @@ async def execute_analysis(run_id: int, user_id: int):
         service = AnalysisService(db, llm_service)
         run = await service.get_run(run_id, user_id)
         if run and run.status == AnalysisStatus.PENDING:
-            await service.run_comparison(run)
+            await service.run_analysis(run)
 
 
 @router.post('/runs', response_model=AnalysisRunResponse, status_code=201)
@@ -144,3 +149,112 @@ async def get_latest_review_edit(
     if not edit:
         return None
     return ReviewEditResponse.model_validate(edit)
+
+
+@router.get('/runs/{run_id}/gaps', response_model=List[CandidateReviewResponse])
+async def list_candidate_states(
+    run_id: int,
+    current_user: User = Depends(get_current_user),
+    service: AnalysisService = Depends(get_analysis_service),
+):
+    try:
+        return await service.list_candidate_states(run_id, current_user.id)
+    except ValueError as exc:
+        raise HTTPException(404, str(exc)) from exc
+
+
+@router.patch("/runs/{run_id}/gaps/{candidate_id}", response_model=CandidateReviewResponse)
+async def update_candidate_state(
+    run_id: int,
+    candidate_id: str,
+    request: CandidateReviewUpdate,
+    current_user: User = Depends(get_current_user),
+    service: AnalysisService = Depends(get_analysis_service),
+):
+    """Update user review state (saved/dismissed/comment) for a gap candidate."""
+    try:
+        review = await service.update_candidate_state(
+            run_id=run_id,
+            candidate_id=candidate_id,
+            user_id=current_user.id,
+            status=request.status,
+            comment=request.comment,
+        )
+        return CandidateReviewResponse.model_validate(review)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=404 if "not found" in str(exc).lower() else 400,
+            detail=str(exc),
+        )
+
+
+@router.post("/runs/{run_id}/gaps/{candidate_id}/brief", response_model=ProjectBriefResponse, status_code=201)
+async def save_project_brief(
+    run_id: int,
+    candidate_id: str,
+    request: ProjectBriefCreate,
+    current_user: User = Depends(get_current_user),
+    service: AnalysisService = Depends(get_analysis_service),
+):
+    """Save a candidate gap as a feasible student project brief."""
+    try:
+        brief = await service.save_project_brief(
+            run_id=run_id,
+            candidate_id=candidate_id,
+            user_id=current_user.id,
+            assumptions=request.assumptions,
+            time_budget=request.time_budget,
+            resource_budget=request.resource_budget,
+        )
+        return ProjectBriefResponse.model_validate(brief)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=404 if "not found" in str(exc).lower() else 400,
+            detail=str(exc),
+        )
+
+
+@router.get("/briefs", response_model=List[ProjectBriefResponse])
+async def list_project_briefs(
+    current_user: User = Depends(get_current_user),
+    service: AnalysisService = Depends(get_analysis_service),
+):
+    """List all project briefs saved by the current user."""
+    briefs = await service.list_project_briefs(current_user.id)
+    return [ProjectBriefResponse.model_validate(b) for b in briefs]
+
+
+@router.delete("/briefs/{brief_id}", status_code=204)
+async def delete_project_brief(
+    brief_id: int,
+    current_user: User = Depends(get_current_user),
+    service: AnalysisService = Depends(get_analysis_service),
+):
+    """Delete a saved project brief."""
+    success = await service.delete_project_brief(brief_id, current_user.id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Project brief not found")
+
+
+@router.post("/runs/{run_id}/relationships/{relationship_id}/save")
+async def save_relationship_evidence(
+    run_id: int,
+    relationship_id: str,
+    request: SaveRelationshipEvidenceRequest,
+    current_user: User = Depends(get_current_user),
+    service: AnalysisService = Depends(get_analysis_service),
+):
+    """Save supporting evidence from both sides of a relationship to the evidence notebook."""
+    try:
+        await service.save_relationship_evidence(
+            run_id=run_id,
+            relationship_id=relationship_id,
+            user_id=current_user.id,
+            note=request.note,
+        )
+        return {"saved": True}
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=404 if "not found" in str(exc).lower() else 400,
+            detail=str(exc),
+        )

@@ -2,7 +2,7 @@
 Pydantic schemas for analysis runs (comparison matrix and literature review).
 """
 from datetime import datetime
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Literal
 from pydantic import BaseModel, Field, field_validator
 
 from app.models.analysis import AnalysisKind, AnalysisStatus
@@ -65,6 +65,126 @@ class LiteratureReviewResult(BaseModel):
     research_question: Optional[str] = None
 
 
+# Gap Analysis Schemas
+class FeasibleProject(BaseModel):
+    """Feasible student investigation recommendation."""
+    bounded_question: str
+    suggested_method: str
+    data_sources: str
+    skills_required: str
+    concrete_steps: List[str] = Field(default_factory=list)
+    success_criteria: str
+    time_budget: Optional[str] = None
+    resource_budget: Optional[str] = None
+
+
+class GapCandidate(BaseModel):
+    """Candidate research gap with evidence basis and student project."""
+    id: str
+    title: str
+    gap_category: str  # methodology, population, dataset, outcome_measure, theoretical, replication, other
+    scope: str
+    gap_source: str  # author_stated, model_inferred, missing_reporting
+    supporting_quotes: List[EvidenceReference] = Field(default_factory=list)
+    evidence_basis: str
+    rationale: str
+    uncertainty: str
+    proposed_research_question: str
+    suggested_search_terms: List[str] = Field(default_factory=list)
+    feasible_project: FeasibleProject
+    coverage_note: Optional[str] = None
+
+
+class GapAnalysisResult(BaseModel):
+    """Complete gap analysis result."""
+    candidates: List[GapCandidate]
+    coverage: Dict[int, str]  # doc_id -> "included" | "insufficient" | "failed"
+    warnings: List[str] = Field(default_factory=list)
+    analysis_scope: str
+
+
+# Candidate Review Schemas
+class CandidateReviewUpdate(BaseModel):
+    status: Optional[Literal['saved', 'dismissed']] = None
+    comment: Optional[str] = Field(default=None, max_length=10000)
+
+
+class CandidateReviewResponse(BaseModel):
+    id: int
+    user_id: int
+    analysis_run_id: int
+    candidate_id: str
+    status: Optional[str] = None
+    comment: Optional[str] = None
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+# Project Brief Schemas
+class ProjectBriefCreate(BaseModel):
+    assumptions: List[str] = Field(default_factory=list, max_length=30)
+    time_budget: Optional[str] = Field(default=None, max_length=100)
+    resource_budget: Optional[str] = Field(default=None, max_length=100)
+
+
+class ProjectBriefResponse(BaseModel):
+    id: int
+    user_id: int
+    analysis_run_id: Optional[int] = None
+    candidate_id: str
+    title: str
+    research_question: str
+    method: str
+    data_sources: str
+    skills_required: Optional[str] = None
+    steps: List[str]
+    success_criteria: str
+    assumptions: List[str]
+    time_budget: Optional[str] = None
+    resource_budget: Optional[str] = None
+    linked_source_ids: List[str]
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+# Disagreement Explorer Schemas
+class ClaimSide(BaseModel):
+    """One side of a comparable claim in a relationship."""
+    document_id: int
+    document_title: str
+    claim: str
+    metric_or_outcome: Optional[str] = None
+    population_or_dataset: Optional[str] = None
+    method_or_context: Optional[str] = None
+    evidence: List[EvidenceReference] = Field(default_factory=list)
+
+
+class ClaimRelationship(BaseModel):
+    """Relationship between two studies on an outcome/theme."""
+    id: str
+    relationship_type: str  # agreement, apparent_disagreement, different_context, insufficient_evidence
+    outcome_theme: str
+    left: ClaimSide
+    right: ClaimSide
+    rationale: str
+    distinguishing_factors: Optional[str] = None
+
+
+class DisagreementResult(BaseModel):
+    """Complete agreement/disagreement explorer result."""
+    relationships: List[ClaimRelationship]
+    coverage: Dict[int, str]  # doc_id -> "included" | "insufficient" | "failed"
+    warnings: List[str] = Field(default_factory=list)
+    themes: List[str] = Field(default_factory=list)
+
+
+class SaveRelationshipEvidenceRequest(BaseModel):
+    note: Optional[str] = None
+
+
 # Analysis Run Schemas
 class AnalysisRunCreate(BaseModel):
     """Request to create a new analysis run."""
@@ -83,19 +203,29 @@ class AnalysisRunCreate(BaseModel):
             raise ValueError("Comparison requires 2-5 documents")
         if kind == AnalysisKind.LITERATURE_REVIEW and not (2 <= len(v) <= 10):
             raise ValueError("Literature review requires 2-10 documents")
+        if kind == AnalysisKind.GAP_ANALYSIS and not (2 <= len(v) <= 10):
+            raise ValueError("Gap analysis requires 2-10 documents")
+        if kind == AnalysisKind.DISAGREEMENT and not (2 <= len(v) <= 10):
+            raise ValueError("Disagreement explorer requires 2-10 documents")
         return v
 
     @field_validator('parameters')
     @classmethod
     def validate_parameters(cls, value):
         value = value or {}
-        if set(value) - {'research_question', 'length'}:
+        allowed = {'research_question', 'length', 'scope', 'time_budget', 'resource_budget'}
+        if set(value) - allowed:
             raise ValueError('Unknown analysis parameter')
-        question = value.get('research_question', '')
-        if not isinstance(question, str) or len(question) > 2000:
-            raise ValueError('Research question must be text of at most 2000 characters')
-        if value.get('length', 'medium') not in ('short', 'medium', 'long'):
+        question = value.get('research_question')
+        if question is not None:
+            if not isinstance(question, str) or len(question) > 2000:
+                raise ValueError('Research question must be text of at most 2000 characters')
+        if 'length' in value and value.get('length') not in ('short', 'medium', 'long'):
             raise ValueError('Invalid review length')
+        for str_key in ('scope', 'time_budget', 'resource_budget'):
+            if str_key in value and value[str_key] is not None:
+                if not isinstance(value[str_key], str) or len(value[str_key]) > 2000:
+                    raise ValueError(f'{str_key} must be text of at most 2000 characters')
         return value
 
 

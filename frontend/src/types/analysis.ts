@@ -2,7 +2,7 @@
  * Types for comparison matrix and literature review analysis.
  */
 
-export type AnalysisKind = 'comparison' | 'literature_review'
+export type AnalysisKind = 'comparison' | 'literature_review' | 'gap_analysis' | 'disagreement'
 
 export type AnalysisStatus =
   | 'pending'
@@ -80,7 +80,7 @@ export interface AnalysisRun {
   parameters?: Record<string, unknown> | null
   stage?: string | null
   progress_percent: number
-  result?: ComparisonMatrixResult | LiteratureReviewResult | null
+  result?: ComparisonMatrixResult | LiteratureReviewResult | GapAnalysisResult | DisagreementResult | null
   error_message?: string | null
   prompt_version?: string | null
   schema_version?: string | null
@@ -114,4 +114,126 @@ export interface ExportFormat {
   format: 'markdown' | 'csv' | 'pdf'
   include_evidence?: boolean
   include_bibliography?: boolean
+}
+
+// ─── Gap Analysis Types ───────────────────────────────────────────────────────
+
+export type GapCategory =
+  | 'methodology'
+  | 'population'
+  | 'dataset'
+  | 'outcome_measure'
+  | 'theoretical'
+  | 'replication'
+  | 'other'
+
+export type GapSource = 'author_stated' | 'model_inferred' | 'missing_reporting'
+
+export interface FeasibleProject {
+  bounded_question: string
+  suggested_method: string
+  data_sources: string
+  skills_required: string
+  concrete_steps: string[]
+  success_criteria: string
+  time_budget?: string | null
+  resource_budget?: string | null
+}
+
+export interface GapCandidate {
+  id: string
+  title: string
+  gap_category: GapCategory
+  scope: string
+  gap_source: GapSource
+  supporting_quotes: EvidenceReference[]
+  evidence_basis: string
+  rationale: string
+  uncertainty: string
+  proposed_research_question: string
+  suggested_search_terms: string[]
+  feasible_project: FeasibleProject
+  coverage_note?: string | null
+}
+
+export interface GapAnalysisResult {
+  candidates: GapCandidate[]
+  coverage: Record<number, 'included' | 'insufficient' | 'failed'>
+  warnings: string[]
+  analysis_scope: string
+}
+
+export type AnalysisKindExtended = AnalysisKind | 'gap_analysis' | 'disagreement'
+
+export interface GapAnalysisRunCreate {
+  kind: 'gap_analysis'
+  document_ids: number[]
+  parameters?: {
+    research_question?: string
+    scope?: string
+    time_budget?: string
+    resource_budget?: string
+  } | null
+}
+
+// Candidate review state
+export interface CandidateReviewState {
+  candidate_id: string
+  status: 'saved' | 'dismissed' | null
+  comment?: string | null
+}
+
+// Project brief saved from a gap candidate
+export interface ProjectBrief {
+  id: number
+    analysis_run_id: number | null
+  candidate_id: string
+  user_id: number
+  title: string
+  research_question: string
+  method: string
+  data_sources: string
+  steps: string[]
+  success_criteria: string
+    skills_required?: string | null
+    time_budget?: string | null
+    resource_budget?: string | null
+  assumptions: string[]
+  linked_source_ids: string[]
+  created_at: string
+}
+
+// ─── Disagreement Explorer Types ─────────────────────────────────────────────
+
+export type RelationshipType =
+  | 'agreement'
+  | 'apparent_disagreement'
+  | 'different_context'
+  | 'insufficient_evidence'
+
+export interface ClaimSide {
+  document_id: number
+  document_title: string
+  claim: string
+  metric_or_outcome?: string | null
+  population_or_dataset?: string | null
+  method_or_context?: string | null
+  evidence: EvidenceReference[]
+}
+
+export interface ClaimRelationship {
+  id: string
+  relationship_type: RelationshipType
+  outcome_theme: string
+  left: ClaimSide
+  right: ClaimSide
+  rationale: string
+  distinguishing_factors?: string | null
+}
+
+export interface DisagreementResult {
+  relationships: ClaimRelationship[]
+  coverage: Record<number, 'included' | 'insufficient' | 'failed'>
+  warnings: string[]
+  themes: string[]
 }

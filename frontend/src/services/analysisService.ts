@@ -1,6 +1,6 @@
 import { formatCitation } from '../components/tools/citations'
 /**
- * Service for analysis operations (comparison matrix and literature review).
+ * Service for analysis operations (comparison matrix, literature review, gap analysis, disagreement explorer).
  */
 import { api } from './api'
 import type {

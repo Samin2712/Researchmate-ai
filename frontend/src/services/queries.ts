@@ -4,6 +4,7 @@ import { chatService } from './chatService'
 import { authService } from './authService'
 import { collectionService } from './collectionService'
 import * as analysisService from './analysisService'
+import * as gapService from './gapDisagreementService'
 import type { AnalysisKind } from '../types/analysis'
 
 export const useDocuments = () =>
@@ -97,5 +98,78 @@ export const useSaveReviewEdit = () => {
     onSuccess: (_, { runId }) => {
       void queryClient.invalidateQueries({ queryKey: ['review-edit', runId] })
     },
+  })
+}
+
+// ─── Gap Analysis & Disagreement Queries ──────────────────────────────────────
+
+export const useCandidateStates = (runId?: number) => useQuery({
+  queryKey: ['candidate-states', runId],
+  queryFn: () => gapService.listCandidateStates(runId!),
+  enabled: !!runId,
+})
+
+export const useProjectBriefs = () =>
+  useQuery({ queryKey: ['project-briefs'], queryFn: gapService.listProjectBriefs })
+
+export const useUpdateCandidateState = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      runId,
+      candidateId,
+      data,
+    }: {
+      runId: number
+      candidateId: string
+      data: { status: 'saved' | 'dismissed' | null; comment?: string }
+    }) => gapService.updateCandidateState(runId, candidateId, data),
+    onSuccess: (_, { runId }) => {
+      void queryClient.invalidateQueries({ queryKey: ['candidate-states', runId] })
+    },
+  })
+}
+
+export const useSaveProjectBrief = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      runId,
+      candidateId,
+      data,
+    }: {
+      runId: number
+      candidateId: string
+      data: { assumptions?: string[]; time_budget?: string; resource_budget?: string }
+    }) => gapService.saveProjectBrief(runId, candidateId, data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['project-briefs'] })
+    },
+  })
+}
+
+export const useDeleteProjectBrief = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: gapService.deleteProjectBrief,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['project-briefs'] })
+    },
+  })
+}
+
+export const useSaveRelationshipEvidence = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      runId,
+      relationshipId,
+      data,
+    }: {
+      runId: number
+      relationshipId: string
+      data: { note?: string }
+    }) => gapService.saveRelationshipEvidence(runId, relationshipId, data),
+    onSuccess: () => { void queryClient.invalidateQueries({ queryKey: ['evidence-notes'] }) },
   })
 }

@@ -23,6 +23,9 @@ def upgrade_schema(connection):
                 sql_type = Chunk.__table__.c[name].type.compile(dialect=connection.dialect)
                 connection.exec_driver_sql(f'ALTER TABLE chunks ADD COLUMN {name} {sql_type}')
     Base.metadata.create_all(connection)
+    if connection.dialect.name == "postgresql":
+        connection.exec_driver_sql("ALTER TYPE analysiskind ADD VALUE IF NOT EXISTS 'gap_analysis'")
+        connection.exec_driver_sql("ALTER TYPE analysiskind ADD VALUE IF NOT EXISTS 'disagreement'")
     # Repair tables created by the original 0002 migration, which omitted these timestamps.
     table, name = "tags", "created_at"
     columns = {c["name"] for c in inspect(connection).get_columns(table)}
