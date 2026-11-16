@@ -6,7 +6,7 @@ Verified against prompt 5 on 2026-11-17. See [the integration audit](../verifica
 
 POST `/api/v1/chat/ask` and `/api/v1/chat/stream` accept `explanation_mode`: `standard` or `simple`. Omission inherits the account preference; old accounts default to standard. PATCH `/api/v1/auth/me` persists `default_explanation_mode`. Generated assistant messages persist the mode used; legacy messages read as standard. The composer stores an explicit selection per account on this browser, above the account default. Changing either control affects future answers, not existing messages. Both chat paths retain chronological conversation history and existing paper/owner scope.
 
-Simple-mode prompts preserve numbers, units, uncertainty, and citations, define technical terms, and explicitly label analogies. They treat paper text as untrusted data. This is model behavior, not a mathematical guarantee of accuracy. Source markers support `[Page X]`, `[Source X]`, `[Page X, Source Y]`, and `[Source Y, Page X]` in both backend extraction and frontend links.
+Simple-mode prompts preserve numbers, units, uncertainty, and citations, define technical terms, and explicitly label qualitative analogies. Analogies must not substitute numerical examples or confuse percentage points with relative percentages. They treat paper text as untrusted data. This is model behavior, not a mathematical guarantee of accuracy. Source markers support `[Page X]`, `[Source X]`, `[Page X, Source Y]`, and `[Source Y, Page X]` in both backend extraction and frontend links.
 
 ## Terminology
 

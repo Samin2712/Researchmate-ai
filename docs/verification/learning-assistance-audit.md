@@ -14,6 +14,7 @@ The initial implementation had working UI and passing tests but was not ready to
 - General prompts remain available in scoped chat. Account preference is loaded from the server; explicit composer mode persists per account on the browser and saved replies retain their own mode.
 - Terminology dialog traps/restores focus and renders Markdown. Status messages, contrast, selected-mode appearance, keyboard arrows and reduced motion were improved. Preference save failures are reported.
 - Both chat paths preserve chronological prior exchanges. Current requests are excluded from their own history.
+- Live review caught an analogy confusing a percentage-point change with a relative percentage. Simple-mode analogies are now explicitly qualitative. Terminology prompt v2 separates general definitions from quoted paper usage and prohibits inferred study details.
 - Backend citation extraction and frontend links handle Gemini's `[Source X, Page Y]` markers as well as the existing marker order. The live test exposed this missing-source bug.
 
 ## Verification evidence
@@ -21,7 +22,7 @@ The initial implementation had working UI and passing tests but was not ready to
 | Check | Result / boundary |
 | --- | --- |
 | Root launcher tests | 8 passed |
-| Backend full regression | 106 passed |
+| Backend full regression | 108 passed |
 | Final focused learning/citation tests, including added history checks | 28 passed |
 | Frontend unit tests | 27 passed |
 | TypeScript and production build | Passed |
@@ -56,7 +57,7 @@ Existing authentication, PDF ingestion/indexing, summarizer, knowledge graph and
 
 ## Deployment
 
-Existing Render services are linked to GitHub `Samin2712/Researchmate-ai`, branch `main`, with automatic deployment enabled. The existing frontend is a static Vite build; the backend is a single-worker FastAPI service. No new paid resource or external integration is needed for prompt 5. The deployed `/health` check confirmed healthy PostgreSQL, database-backed vectors, Gemini remote embeddings and Gemini 2.5 Flash. The existing settings select Gemini 2.5 Flash, not Gemini 3.8 Flash. Release commit IDs, terminal deploy status and hosted smoke-test result are recorded after publishing.
+Existing Render services are linked to GitHub `Samin2712/Researchmate-ai`, branch `main`, with automatic deployment enabled. The existing frontend is a static Vite build; the backend is a single-worker FastAPI service. No new paid resource or external integration is needed for prompt 5. The deployed `/health` check confirmed healthy PostgreSQL, database-backed vectors, Gemini remote embeddings and Gemini 2.5 Flash. The existing settings select Gemini 2.5 Flash, not Gemini 3.8 Flash. Initial release `8618b59` became live on both services, and both hosted API and unmocked browser checks passed. A subsequent wording correction is verified and published separately; final deploy IDs are recorded in the deployment evidence file.
 
 ## Operational limits
 

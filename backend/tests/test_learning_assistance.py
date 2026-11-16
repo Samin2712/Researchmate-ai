@@ -176,6 +176,7 @@ async def test_chat_ask_explicit_override_simple_mode(client: AsyncClient, test_
         assert "40 adults" in data["message"]["content"]
         # Clearly marked analogy
         assert "*Analogy:*" in data["message"]["content"]
+        assert "Keep analogies qualitative" in mock_llm.generate_calls[-1]["prompt"]
         # Preserves scientific qualifiers / uncertainty
         assert "preliminary correlation" in data["message"]["content"]
 

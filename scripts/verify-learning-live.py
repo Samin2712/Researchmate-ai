@@ -73,6 +73,7 @@ async def main(api, output):
             session_id = answer["session_id"]
             assert answer["message"]["explanation_mode"] == "simple"
             assert "5 percentage points" in answer["message"]["content"]
+            assert "5% improvement" not in answer["message"]["content"].lower(), "Analogy confused percentage points with relative percentages"
             assert answer["sources"], f"missing citations: {answer['message']['content']}"
             report["responses"]["simple_answer"] = answer["message"]["content"]
             report["checks"].append("real simple answer, numerical result, citations, inherited preference")

@@ -413,6 +413,7 @@ Remember: Your answers should be trustworthy, verifiable, and helpful for academ
             prompt_parts.append("  * Use clear, plain language and avoid unnecessary academic jargon.")
             prompt_parts.append("  * Define necessary technical terms when they are introduced.")
             prompt_parts.append("  * You may add clearly marked analogies to make complex concepts intuitive (prefix with '*Analogy:*' or '*In simpler terms:*').")
+            prompt_parts.append("  * Keep analogies qualitative: do not introduce numerical examples or restate study measurements inside an analogy. A percentage-point change is NOT a relative percentage change. Never replace '5 percentage points' with '5% improvement'. Keep exact measurements in the factual explanation with their original units.")
             prompt_parts.append("  * MANDATORY SCIENTIFIC INTEGRITY:")
             prompt_parts.append("    - Strictly preserve all exact numerical values, percentages, sample sizes, and statistics exactly as reported (do not round, alter, or omit units).")
             prompt_parts.append("    - Strictly preserve uncertainty and scientific qualifiers (e.g., 'preliminary', 'suggests', 'correlated'). NEVER convert a tentative finding into an established fact, and NEVER convert correlation into causation.")

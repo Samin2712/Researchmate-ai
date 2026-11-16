@@ -1,0 +1,14 @@
+{
+  "frontend": "https://researchmate-frontend.onrender.com",
+  "api": "https://researchmate-backend-djg9.onrender.com/api/v1",
+  "mocked": false,
+  "checks": [
+    "deployed registration, login and frontend/API connection",
+    "real upload, processing and three automatic starter questions",
+    "scoped draft, real simple streamed answer and clickable source verification",
+    "saved history, mode selection, responsive layout and deep-route reload"
+  ],
+  "browserErrors": [],
+  "status": "passed",
+  "accountNote": "Audit account remains; paper and chat were removed."
+}
