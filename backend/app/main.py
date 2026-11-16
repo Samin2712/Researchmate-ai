@@ -63,6 +63,12 @@ async def lifespan(app: FastAPI):
         ])).values(status=AnalysisStatus.FAILED, stage='Interrupted; retry from setup',
                   error_message='Server restarted during analysis. Start a new run to retry.'))
 
+        from app.models.learning import DocumentQuestionSet, QuestionGenerationStatus
+        await conn.execute(update(DocumentQuestionSet).where(
+            DocumentQuestionSet.status == QuestionGenerationStatus.PENDING.value
+        ).values(status=QuestionGenerationStatus.FAILED.value,
+                 error_message='Question generation was interrupted by a server restart. Click regenerate to retry.'))
+
     if os.environ.get('RENDER') and engine.url.get_backend_name() == 'sqlite':
         logger.warning('SQLite on Render is temporary unless stored on an attached persistent disk. Set DATABASE_URL to a managed PostgreSQL database to keep accounts after restarts.')
 
@@ -73,6 +79,11 @@ async def lifespan(app: FastAPI):
 
     # Shutdown
     logger.info("Shutting down ResearchMate AI...")
+    from app.services.learning_service import _question_tasks
+    tasks = list(_question_tasks)
+    for task in tasks:
+        task.cancel()
+    await asyncio.gather(*tasks, return_exceptions=True)
     await engine.dispose()
     logger.info("ResearchMate AI shut down successfully!")
 

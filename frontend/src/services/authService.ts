@@ -4,9 +4,10 @@ export const authService = {
   me: async () => (await api.get<User>('/auth/me')).data,
   updateProfile: async (data: {
     full_name: string
-    institution: string
-    bio: string
-    research_interests: string
+    institution?: string
+    bio?: string
+    research_interests?: string
+    default_explanation_mode?: 'standard' | 'simple'
   }) => (await api.patch<User>('/auth/me', data)).data,
   uploadPhoto: async (file: File) => {
     const body = new FormData()

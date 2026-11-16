@@ -1,0 +1,57 @@
+{
+  "api": "http://127.0.0.1:8000/api/v1",
+  "checks": [
+    "persisted account preference",
+    "real PDF processing and indexing",
+    "three automatic paper-specific questions",
+    "real simple answer, numerical result, citations, inherited preference",
+    "grounded terminology",
+    "streaming override and saved mode history"
+  ],
+  "responses": {
+    "questions": [
+      {
+        "category": "comprehension",
+        "question": "What was the primary finding regarding cognitive accuracy in the trial, and what was the magnitude of the observed change?",
+        "evidence_quotes": [
+          "Accuracy increased by 5 percentage points, from 70% to 75% (p < 0.05)."
+        ],
+        "page_numbers": [
+          1
+        ]
+      },
+      {
+        "category": "methodology",
+        "question": "What machine learning technique was employed to classify responses in the study, and what specific kernel was utilized?",
+        "evidence_quotes": [
+          "A Support Vector Machine classifier used an RBF kernel to classify responses."
+        ],
+        "page_numbers": [
+          2
+        ]
+      },
+      {
+        "category": "critical_thinking",
+        "question": "Given the study's design, what are the main limitations identified by the authors that could impact the broader applicability of the findings?",
+        "evidence_quotes": [
+          "The single-site sample of 40 adults limits generalizability. Long-term retention was not measured. Replication at multiple sites is needed."
+        ],
+        "page_numbers": [
+          3
+        ]
+      }
+    ],
+    "simple_answer": "In a randomized trial involving 40 adults, accuracy increased by 5 percentage points, moving from 70% to 75% [Source 1, Page 1]. This change was statistically significant (p < 0.05) [Source 1, Page 1].\n\n*Analogy:* Imagine you have a basket where you're trying to throw balls. Before practice, you hit the target 70 out of 100 times. After practice, you hit it 75 out of 100 times. That's a 5-ball improvement.\n\nHowever, the researchers note that this finding is a \"preliminary association\" and \"does not establish causation\" [Source 1, Page 1]. The study's generalizability is limited because it was conducted at a single site with only 40 adults, and it did not measure how long the improved accuracy lasted [Source 3, Page 3]. Replication at multiple sites is suggested for future research [Source 3, Page 3].",
+    "term": {
+      "term": "Support Vector Machine",
+      "document_id": 5,
+      "explanation": "In the paper \"Cognitive Accuracy Trial,\" a **Support Vector Machine (SVM)** is used as a type of **classifier**.\n\nHere's what that means in simple terms:\n\nImagine you have a bunch of data points, and you want to separate them into different categories. For example, if you're looking at test scores, you might want to categorize students as \"pass\" or \"fail.\"\n\nA Support Vector Machine is a powerful computer algorithm that learns how to draw the best possible boundary (or \"hyperplane\" in higher dimensions) between these different categories of data. Its goal is to find the line or plane that maximizes the distance to the nearest data points from each category. These \"nearest data points\" are called \"support vectors\" \u2013 they are the crucial ones that define the boundary.\n\n**Specifically in the \"Cognitive Accuracy Trial\" paper:**\n\nThe excerpt states: \"A Support Vector Machine classifier used an RBF kernel to classify responses.\"\n\nThis tells us that the researchers used an SVM to **categorize the \"responses\"** they collected from the forty adults in their study. While the excerpt doesn't specify *what* those responses were (e.g., correct/incorrect answers, reaction times, specific cognitive states), the SVM's role was to **automatically assign each response to a predefined category.**\n\nThe mention of an \"RBF kernel\" indicates a specific technique the SVM used to handle potentially complex, non-linear relationships in the data. Think of it as allowing the SVM to draw curved or more intricate boundaries instead of just straight lines, which can be very effective for real-world data.\n\nIn essence, the authors applied the Support Vector Machine to **analyze the data from their participants' responses and sort them into meaningful groups**, likely to assess the \"cognitive accuracy\" mentioned in the paper's title before and after their intervention (practice or control). It's a method for making predictions or classifications based on learned patterns in the data.",
+      "grounded_in_paper": true,
+      "status": "grounded",
+      "source_quote": "A Support Vector Machine classifier used an RBF kernel to classify responses.",
+      "page_number": 2
+    }
+  },
+  "status": "passed",
+  "account_note": "Verification account remains: no account-delete API. Paper and chat removed."
+}

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { ArrowDown, ArrowUp, BookOpen, MessageSquarePlus, Square, Sparkles } from 'lucide-react'
+import { ArrowDown, ArrowUp, BookOpen, MessageSquarePlus, Square, Sparkles, BookA } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useReducedMotion } from 'motion/react'
 import type { Document, Message } from '../../types'
 import { chatService } from '../../services/chatService'
@@ -12,6 +12,9 @@ import { usePreferences } from '../../store/preferences'
 import { Exporter } from '../tools/Exporter'
 import { sourceCitation } from '../tools/citations'
 import { MessageBubble } from './MessageBubble'
+import { StarterQuestions } from '../documents/StarterQuestions'
+import { TerminologyModal } from './TerminologyModal'
+import { useUser } from '../../services/queries'
 
 export function ChatInterface({
   documents,
@@ -26,8 +29,27 @@ export function ChatInterface({
   documentId?: number
   onComplete: (id: number) => void
 }) {
+  const [searchParams] = useSearchParams()
+  const initialDraft = searchParams.get('q') || ''
+  const defaultMode = usePreferences((state) => state.defaultExplanationMode) || 'standard'
+  const { data: user } = useUser()
+  const modeChanged = useRef(false)
+
   const [messages, setMessages] = useState<Message[]>(initialMessages)
-  const [input, setInput] = useState('')
+  const [input, setInput] = useState(initialDraft)
+  const [explanationMode, setExplanationMode] = useState<'standard' | 'simple'>(defaultMode)
+  useEffect(() => {
+    if (!modeChanged.current && user) {
+      const saved = localStorage.getItem(`researchmate.explanation-mode.${user.id}`)
+      setExplanationMode(saved === 'simple' || saved === 'standard' ? saved : user.default_explanation_mode || 'standard')
+    }
+  }, [user])
+  function selectMode(mode: 'standard' | 'simple') {
+    modeChanged.current = true
+    setExplanationMode(mode)
+    if (user) localStorage.setItem(`researchmate.explanation-mode.${user.id}`, mode)
+  }
+  const [terminologyOpen, setTerminologyOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [sessionId, setSessionId] = useState(initialSession)
@@ -45,6 +67,11 @@ export function ChatInterface({
   const ready = documents.filter((document) => document.status === 'completed')
   const scopeValid = scope === 'all' || ready.some((document) => String(document.id) === scope)
   useEffect(() => () => controller.current?.abort(), [])
+  useEffect(() => {
+    if (initialDraft && field.current) {
+      field.current.focus()
+    }
+  }, [initialDraft])
   useEffect(() => {
     if (follow && messages.length)
       bottom.current?.scrollIntoView({
@@ -79,7 +106,7 @@ export function ChatInterface({
     setMessages((previous) => [
       ...previous,
       { ...base, id: userId, role: 'user', content: question },
-      { ...base, id: assistantId, role: 'assistant', content: '' },
+      { ...base, id: assistantId, role: 'assistant', content: '', explanation_mode: explanationMode },
     ])
     setStreamingId(assistantId)
     let receivedId = sessionId
@@ -91,6 +118,7 @@ export function ChatInterface({
           message: question,
           session_id: sessionId,
           document_ids: scope === 'all' ? undefined : [Number(scope)],
+          explanation_mode: explanationMode,
         },
         (event) => {
           if (event.type === 'session') {
@@ -177,11 +205,21 @@ export function ChatInterface({
             {!scopeValid && <option value={scope}>Selected paper is unavailable</option>}
           </select>
         </div>
-        <Exporter
-          title="Research conversation"
-          content={exportContent}
-          disabled={busy || !!error}
-        />
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            className="button secondary small inline-flex items-center gap-1.5"
+            onClick={() => setTerminologyOpen(true)}
+          >
+            <BookA size={15} />
+            <span>Explain term</span>
+          </button>
+          <Exporter
+            title="Research conversation"
+            content={exportContent}
+            disabled={busy || !!error}
+          />
+        </div>
       </div>
       <div
         className="messages-scroll"
@@ -204,24 +242,45 @@ export function ChatInterface({
                 : 'Add a PDF to your library. Once it’s ready, your research conversation can begin.'}
             </p>
             {ready.length ? (
-              <div className="prompt-grid">
-                {[
-                  'What are the main findings?',
-                  'Explain the research methods.',
-                  'What limitations should I consider?',
-                ].map((prompt) => (
-                  <button
-                    key={prompt}
-                    onClick={() => {
+              <>
+              {scope !== 'all' && (
+                <div className="mt-4 max-w-xl mx-auto w-full text-left">
+                  <StarterQuestions
+                    documentId={Number(scope)}
+                    onSelectQuestion={(prompt) => {
                       setInput(prompt)
                       field.current?.focus()
                     }}
-                  >
-                    <MessageSquarePlus size={17} />
-                    {prompt}
-                  </button>
-                ))}
-              </div>
+                  />
+                </div>
+              )}
+                <div className="generic-prompts-wrapper mt-3">
+                  <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                    General exploration prompts
+                  </h3>
+                  <div className="prompt-grid">
+                    {[
+                      'What are the main findings?',
+                      'Explain the research methods.',
+                      'What limitations should I consider?',
+                    ].map((prompt) => (
+                      <button
+                        key={prompt}
+                        onClick={() => {
+                          setInput(prompt)
+                          field.current?.focus()
+                        }}
+                      >
+                        <MessageSquarePlus size={17} />
+                        {prompt}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-slate-600 mt-3">
+                    Tip: Choose an individual paper in the scope selector above to see questions tailored to that study.
+                  </p>
+                </div>
+              </>
             ) : (
               <Link className="button primary" to="/library?upload=1">
                 Add your first paper
@@ -235,6 +294,7 @@ export function ChatInterface({
               key={message.id}
               message={message}
               streaming={streamingId === message.id}
+              onExplainTerm={() => setTerminologyOpen(true)}
             />
           ))}
           <div ref={bottom} />
@@ -262,6 +322,56 @@ export function ChatInterface({
             This paper is not ready or has been deleted. Choose another paper above.
           </p>
         )}
+        <div className="composer-mode-bar flex items-center justify-between mb-2 px-1">
+          <div
+            className="segmented-mode-control inline-flex rounded-lg p-0.5 bg-slate-200/80 border border-slate-300 text-xs"
+            role="radiogroup"
+            aria-label="Explanation mode"
+          >
+            <button
+              type="button"
+              role="radio"
+              aria-checked={explanationMode === 'standard'}
+              className={`px-2.5 py-1 rounded-md font-medium transition-all ${
+                explanationMode === 'standard'
+                  ? 'bg-white text-slate-900 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+              onClick={() => selectMode('standard')}
+              onKeyDown={(event) => {
+                if (['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp'].includes(event.key)) {
+                  event.preventDefault(); selectMode('simple'); (event.currentTarget.nextElementSibling as HTMLElement)?.focus()
+                }
+              }}
+            >
+              Standard
+            </button>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={explanationMode === 'simple'}
+              className={`px-2.5 py-1 rounded-md font-medium transition-all inline-flex items-center gap-1 ${
+                explanationMode === 'simple'
+                  ? 'bg-teal-700 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+              onClick={() => selectMode('simple')}
+              onKeyDown={(event) => {
+                if (['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp'].includes(event.key)) {
+                  event.preventDefault(); selectMode('standard'); (event.currentTarget.previousElementSibling as HTMLElement)?.focus()
+                }
+              }}
+            >
+              <Sparkles size={12} />
+              <span>Explain simply</span>
+            </button>
+          </div>
+          <span className="text-[11px] text-slate-500 hidden sm:inline">
+            {explanationMode === 'simple'
+              ? 'Applies to next reply: accessible terms & analogies, retains numbers and citations'
+              : 'Applies to next reply: standard academic precision'}
+          </span>
+        </div>
         <form className="chat-composer" onSubmit={send}>
           <label className="sr-only" htmlFor="chat-message">
             Your question
@@ -327,6 +437,12 @@ export function ChatInterface({
             : 'AI can make mistakes. Follow the sources and verify important details.'}
         </p>
       </div>
+      <TerminologyModal
+        isOpen={terminologyOpen}
+        onClose={() => setTerminologyOpen(false)}
+        documents={documents}
+        currentDocumentId={scope === 'all' ? undefined : Number(scope)}
+      />
     </div>
   )
 }

@@ -1,5 +1,5 @@
 import { memo } from 'react'
-import { BookOpen, Sparkles, UserRound, ExternalLink } from 'lucide-react'
+import { BookOpen, Sparkles, UserRound, ExternalLink, BookA } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { motion } from 'motion/react'
 import ReactMarkdown from 'react-markdown'
@@ -11,9 +11,11 @@ import type { Message } from '../../types'
 export const MessageBubble = memo(function MessageBubble({
   message,
   streaming = false,
+  onExplainTerm,
 }: {
   message: Message
   streaming?: boolean
+  onExplainTerm?: (term?: string) => void
 }) {
   const assistant = message.role === 'assistant'
   const sourcePrefix = `message-${message.id}`
@@ -39,7 +41,14 @@ export const MessageBubble = memo(function MessageBubble({
       </span>
       <div className="message-body">
         <div className="message-heading">
-          <strong>{assistant ? 'ResearchMate' : 'You'}</strong>
+          <div className="flex items-center gap-2">
+            <strong>{assistant ? 'ResearchMate' : 'You'}</strong>
+            {assistant && message.explanation_mode === 'simple' && (
+              <span className="mode-badge simple" title="Answered in Explain simply mode">
+                Explain simply
+              </span>
+            )}
+          </div>
           {streaming && <span className="stream-label">Reading and responding…</span>}
         </div>
         {message.incomplete && (
@@ -106,6 +115,18 @@ export const MessageBubble = memo(function MessageBubble({
                 </details>
               ))}
             </div>
+          </div>
+        )}
+        {assistant && onExplainTerm && (
+          <div className="message-actions mt-2 flex items-center justify-between">
+            <button
+              type="button"
+              className="text-xs text-teal-700 hover:text-teal-800 font-medium inline-flex items-center gap-1.5 py-1 px-2 rounded hover:bg-teal-50 transition-colors"
+              onClick={() => onExplainTerm()}
+            >
+              <BookA size={14} />
+              <span>Explain a term</span>
+            </button>
           </div>
         )}
         {assistant && confidence != null && (

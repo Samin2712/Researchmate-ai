@@ -45,6 +45,14 @@ class User(Base):
     def avatar_url(self):
         return self.profile.photo_data if self.profile else None
 
+    @property
+    def default_explanation_mode(self):
+        return (
+            self.profile.default_explanation_mode
+            if self.profile and self.profile.default_explanation_mode
+            else "standard"
+        )
+
     def __repr__(self):
         return f"<User {self.email}>"
 
@@ -59,3 +67,4 @@ class UserProfile(Base):
     research_interests = Column(String(500), nullable=True)
     # Small, re-encoded thumbnails live in the database, not ephemeral upload storage.
     photo_data = Column(Text, nullable=True)
+    default_explanation_mode = Column(String(32), nullable=True, default="standard", server_default="standard")

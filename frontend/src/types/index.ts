@@ -8,6 +8,7 @@ export interface User {
   bio?: string | null
   research_interests?: string | null
   avatar_url?: string | null
+  default_explanation_mode?: 'standard' | 'simple'
 }
 
 export interface Document {
@@ -101,6 +102,7 @@ export interface Message {
   content: string
   sources: Source[] | null
   confidence_score: number | null
+  explanation_mode?: 'standard' | 'simple' | string
   created_at: string
 }
 
@@ -116,6 +118,47 @@ export interface ChatRequest {
   message: string
   session_id?: number
   document_ids?: number[]
+  explanation_mode?: 'standard' | 'simple'
+}
+
+export type QuestionCategory = 'comprehension' | 'methodology' | 'critical_thinking'
+
+export interface StarterQuestion {
+  category: QuestionCategory
+  question: string
+  evidence_quotes?: string[]
+  page_numbers?: (number | null)[]
+}
+
+export interface DocumentQuestionSet {
+  id?: number
+  document_id: number
+  status: 'pending' | 'ready' | 'unavailable' | 'failed'
+  document_revision?: string | null
+  prompt_version?: string
+  model_provider?: string | null
+  model_name?: string | null
+  questions: StarterQuestion[]
+  error_message?: string | null
+  created_at?: string
+  updated_at?: string | null
+}
+
+export interface TermExplanationRequest {
+  document_id: number
+  term: string
+  context?: string
+  page_number?: number
+}
+
+export interface TermExplanationResponse {
+  term: string
+  document_id: number
+  explanation: string
+  grounded_in_paper: boolean
+  status: 'grounded' | 'general' | 'unavailable'
+  source_quote?: string | null
+  page_number?: number | null
 }
 
 export type StreamEvent =

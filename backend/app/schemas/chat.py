@@ -34,6 +34,7 @@ class ChatMessageResponse(ChatMessageBase):
     session_id: int
     sources: Optional[List[Dict[str, Any]]] = None
     confidence_score: Optional[int] = None
+    explanation_mode: Optional[str] = "standard"
     created_at: datetime
 
     @field_validator("sources", mode="before")
@@ -43,7 +44,7 @@ class ChatMessageResponse(ChatMessageBase):
         if isinstance(value, str):
             return json.loads(value)
         return value
-    
+
     class Config:
         from_attributes = True
 
@@ -64,7 +65,7 @@ class ChatSessionResponse(ChatSessionBase):
     user_id: int
     created_at: datetime
     updated_at: Optional[datetime] = None
-    
+
     class Config:
         from_attributes = True
 
@@ -79,6 +80,7 @@ class ChatRequest(BaseModel):
     session_id: Optional[int] = None
     message: str = Field(..., min_length=1, max_length=5000)
     document_ids: Optional[List[int]] = None  # Filter by specific documents
+    explanation_mode: Optional[str] = Field(default=None, pattern="^(standard|simple)$")
 
 
 class ChatResponse(BaseModel):
@@ -87,3 +89,22 @@ class ChatResponse(BaseModel):
     message: ChatMessageResponse
     sources: List[Dict[str, Any]] = []
     metadata: Optional[Dict[str, Any]] = None
+
+
+class TermExplanationRequest(BaseModel):
+    """Request to explain a specific term grounded in a document."""
+    document_id: int
+    term: str = Field(..., min_length=1, max_length=150)
+    context: Optional[str] = Field(default=None, max_length=1000)
+    page_number: Optional[int] = None
+
+
+class TermExplanationResponse(BaseModel):
+    """Response containing grounded or general term explanation."""
+    term: str
+    document_id: int
+    explanation: str
+    grounded_in_paper: bool
+    status: str  # "grounded", "general", "unavailable"
+    source_quote: Optional[str] = None
+    page_number: Optional[int] = None

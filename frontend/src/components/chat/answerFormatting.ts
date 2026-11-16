@@ -46,15 +46,16 @@ export function citationLinks({ sources, prefix }: { sources: Source[]; prefix: 
         }
         const result: MarkdownNode[] = []
         let previous = 0
-        for (const match of child.value.matchAll(/\[(?:Page\s+(\d+)(?:,\s*Source\s+(\d+))?|Source\s+(\d+))\]/gi)) {
+        for (const match of child.value.matchAll(/\[(?:Page\s+(\d+)(?:,\s*Source\s+(\d+))?|Source\s+(\d+)(?:,\s*Page\s+(\d+))?)\]/gi)) {
           const sourceNumber = Number(match[2] || match[3])
+          const pageNumber = match[1] || match[4]
           const candidates = sources.map((source, index) => ({ source, index }))
             .filter(({ source, index }) => {
-              if (match[1] && String(source.page_number) !== match[1]) return false
+              if (pageNumber && String(source.page_number) !== pageNumber) return false
               if (!sourceNumber) return true
               // Legacy responses did not preserve original excerpt numbers.
               return source.source_number != null ? source.source_number === sourceNumber :
-                match[1] ? true : index + 1 === sourceNumber
+                pageNumber ? true : index + 1 === sourceNumber
             })
           if (!candidates.length || new Set(candidates.map(({ source }) => source.document_id)).size > 1) continue
           const { source, index } = candidates[0]

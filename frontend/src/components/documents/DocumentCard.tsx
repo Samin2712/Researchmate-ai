@@ -15,6 +15,7 @@ import { formatCitation, formatBibTeX, type CitationStyle } from '../tools/citat
 import { TagChip } from '../collections/TagChip'
 import { TagManager } from '../collections/TagManager'
 import { useTags } from '../../services/queries'
+import { StarterQuestions } from './StarterQuestions'
 
 export function StatusBadge({ status }: { status: Document['status'] }) {
   return (
@@ -250,6 +251,13 @@ export function DocumentCard({
           <p className="leading-relaxed">
             {document.abstract || 'No abstract is available for this paper.'}
           </p>
+
+          {/* Paper-specific starter questions */}
+          {document.status === 'completed' && (
+            <div className="mt-6 mb-4">
+              <StarterQuestions documentId={document.id} documentTitle={document.title} />
+            </div>
+          )}
 
           {/* Citation formatter */}
           <div className="citation-formatter">

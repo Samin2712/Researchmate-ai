@@ -11,7 +11,9 @@ def test_legacy_upgrade_preserves_data_and_can_repeat(tmp_path):
         upgrade_schema(conn)
         assert conn.execute(text("SELECT title, authors, doi FROM documents")).one() == ("Legacy paper", "Original author", None)
         assert "structured_authors" in {c["name"] for c in inspect(conn).get_columns("documents")}
-        assert {"collections", "tags", "document_tags", "collection_documents"} <= set(inspect(conn).get_table_names())
+        assert {"collections", "tags", "document_tags", "collection_documents", "document_questions", "document_glossary"} <= set(inspect(conn).get_table_names())
+        assert "explanation_mode" in {c["name"] for c in inspect(conn).get_columns("chat_messages")}
+        assert "default_explanation_mode" in {c["name"] for c in inspect(conn).get_columns("user_profiles")}
     engine.dispose()
 
 

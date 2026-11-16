@@ -46,8 +46,8 @@ describe('research answer formatting', () => {
   it('resolves original source numbers even when only cited excerpts were returned', () => {
     const html = renderToStaticMarkup(createElement(ReactMarkdown, {
       remarkPlugins: [[citationLinks, { sources: [{ ...sources[0], source_number: 3 }], prefix: 'm' }]],
-      children: 'Evidence [Source 3] and [Page 2, Source 3].',
+      children: 'Evidence [Source 3] and [Page 2, Source 3] and [Source 3, Page 2].',
     }))
-    expect(html.match(/href="#m-source-1"/g)).toHaveLength(2)
+    expect(html.match(/href="#m-source-1"/g)).toHaveLength(3)
   })
 })

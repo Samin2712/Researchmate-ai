@@ -19,9 +19,12 @@ from app.schemas.chat import (
     ChatSessionWithMessages,
     ChatRequest,
     ChatResponse,
-    ChatMessageResponse
+    ChatMessageResponse,
+    TermExplanationRequest,
+    TermExplanationResponse,
 )
 from app.services.rag.engine import rag_engine
+from app.services.learning_service import learning_service
 
 logger = logging.getLogger(__name__)
 
@@ -41,11 +44,11 @@ async def create_chat_session(
         user_id=current_user.id,
         title=session_data.title
     )
-    
+
     db.add(chat_session)
     await db.commit()
     await db.refresh(chat_session)
-    
+
     return chat_session
 
 
@@ -63,7 +66,7 @@ async def list_chat_sessions(
         .order_by(ChatSession.created_at.desc())
     )
     sessions = result.scalars().all()
-    
+
     return sessions
 
 
@@ -83,13 +86,13 @@ async def get_chat_session(
         )
     )
     session = result.scalar_one_or_none()
-    
+
     if not session:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Chat session not found"
         )
-    
+
     # Load messages
     messages_result = await db.execute(
         select(ChatMessage)
@@ -97,7 +100,7 @@ async def get_chat_session(
         .order_by(ChatMessage.created_at.asc())
     )
     messages = messages_result.scalars().all()
-    
+
     return {
         **session.__dict__,
         "messages": messages
@@ -112,7 +115,7 @@ async def ask_question(
 ):
     """
     Ask a question using RAG (Retrieval-Augmented Generation)
-    
+
     Retrieves relevant context from documents and generates answer using LLM
     """
     try:
@@ -125,7 +128,7 @@ async def ask_question(
                 )
             )
             session = result.scalar_one_or_none()
-            
+
             if not session:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
@@ -140,7 +143,7 @@ async def ask_question(
             db.add(session)
             await db.commit()
             await db.refresh(session)
-        
+
         # Save user message
         user_message = ChatMessage(
             session_id=session.id,
@@ -149,51 +152,54 @@ async def ask_question(
         )
         db.add(user_message)
         await db.commit()
-        
+
         # Get conversation history (last 3 exchanges)
         history_result = await db.execute(
             select(ChatMessage)
-            .where(ChatMessage.session_id == session.id)
-            .order_by(ChatMessage.created_at.desc())
+            .where(ChatMessage.session_id == session.id, ChatMessage.id != user_message.id)
+            .order_by(ChatMessage.id.desc())
             .limit(6)  # Last 3 Q&A pairs
         )
-        history_messages = history_result.scalars().all()
-        
+        history_messages = list(reversed(history_result.scalars().all()))
+
         # Format conversation history
         conversation_history = []
-        for i in range(0, len(history_messages), 2):
-            if i + 1 < len(history_messages):
+        for i in range(len(history_messages) - 1):
+            if history_messages[i].role == MessageRole.USER and history_messages[i + 1].role == MessageRole.ASSISTANT:
                 conversation_history.append({
-                    "question": history_messages[i+1].content,
-                    "answer": history_messages[i].content
+                    "question": history_messages[i].content[:5000],
+                    "answer": history_messages[i+1].content[:6000]
                 })
-        
+
         # Generate answer using RAG
-        logger.info(f"🤖 Processing question: {chat_request.message[:100]}")
-        
+        effective_mode = chat_request.explanation_mode or current_user.default_explanation_mode or "standard"
+        logger.info(f"🤖 Processing question ({effective_mode}): {chat_request.message[:100]}")
+
         rag_response = await rag_engine.answer_question(
             question=chat_request.message,
             user_id=str(current_user.id),
             document_ids=chat_request.document_ids,
-            conversation_history=conversation_history[::-1]  # Reverse to chronological order
+            conversation_history=conversation_history,
+            explanation_mode=effective_mode
         )
         if rag_response.get('error'):
             raise HTTPException(status_code=502, detail='The AI provider could not answer. Check provider connectivity and try again.')
-        
+
         # Save assistant message
         assistant_message = ChatMessage(
             session_id=session.id,
             role=MessageRole.ASSISTANT,
             content=rag_response['answer'],
             sources=rag_response['sources'] or None,
-            confidence_score=round(rag_response.get('confidence', 0.0) * 100)
+            confidence_score=round(rag_response.get('confidence', 0.0) * 100),
+            explanation_mode=effective_mode
         )
         db.add(assistant_message)
         await db.commit()
         await db.refresh(assistant_message)
-        
+
         logger.info(f"✅ Answer generated with {len(rag_response['sources'])} sources")
-        
+
         return {
             "session_id": session.id,
             "message": assistant_message,
@@ -203,7 +209,7 @@ async def ask_question(
                 "provider": rag_response.get('provider', 'unknown')
             }
         }
-    
+
     except HTTPException:
         raise
     except Exception as e:
@@ -222,7 +228,7 @@ async def stream_answer(
 ):
     """
     Stream answer using Server-Sent Events (SSE)
-    
+
     Provides real-time streaming of the generated answer
     """
     async def generate():
@@ -236,7 +242,7 @@ async def stream_answer(
                     )
                 )
                 session = result.scalar_one_or_none()
-                
+
                 if not session:
                     yield f"data: {json.dumps({'type': 'error', 'error': 'Session not found'})}\n\n"
                     return
@@ -248,7 +254,7 @@ async def stream_answer(
                 db.add(session)
                 await db.commit()
                 await db.refresh(session)
-            
+
             # Save user message
             user_message = ChatMessage(
                 session_id=session.id,
@@ -257,19 +263,31 @@ async def stream_answer(
             )
             db.add(user_message)
             await db.commit()
-            
+
             # Send session info
             yield f"data: {json.dumps({'type': 'session', 'session_id': session.id})}\n\n"
-            
+
             # Stream answer from RAG engine
             full_answer = ""
             sources = []
             confidence = 0.0
-            
+            effective_mode = chat_request.explanation_mode or current_user.default_explanation_mode or "standard"
+            history_result = await db.execute(select(ChatMessage).where(
+                ChatMessage.session_id == session.id, ChatMessage.id != user_message.id
+            ).order_by(ChatMessage.id.desc()).limit(6))
+            history = list(reversed(history_result.scalars().all()))
+            conversation_history = [
+                {"question": history[i].content[:5000], "answer": history[i + 1].content[:6000]}
+                for i in range(len(history) - 1)
+                if history[i].role == MessageRole.USER and history[i + 1].role == MessageRole.ASSISTANT
+            ]
+
             async for chunk in rag_engine.stream_answer(
                 question=chat_request.message,
                 user_id=str(current_user.id),
-                document_ids=chat_request.document_ids
+                document_ids=chat_request.document_ids,
+                conversation_history=conversation_history,
+                explanation_mode=effective_mode
             ):
                 if chunk['type'] == 'answer' and chunk.get('content'):
                     full_answer += chunk['content']
@@ -283,25 +301,26 @@ async def stream_answer(
                 elif chunk['type'] == 'error':
                     yield f"data: {json.dumps(chunk)}\n\n"
                     return
-            
+
             # Save assistant message
             assistant_message = ChatMessage(
                 session_id=session.id,
                 role=MessageRole.ASSISTANT,
                 content=full_answer,
                 sources=sources or None,
-                confidence_score=round(confidence * 100)
+                confidence_score=round(confidence * 100),
+                explanation_mode=effective_mode
             )
             db.add(assistant_message)
             await db.commit()
-            
+
             # Send completion
             yield f"data: {json.dumps({'type': 'complete'})}\n\n"
-        
+
         except Exception as e:
             logger.error(f"Streaming error: {e}")
             yield f"data: {json.dumps({'type': 'error', 'error': str(e)})}\n\n"
-    
+
     return StreamingResponse(
         generate(),
         media_type="text/event-stream",
@@ -328,14 +347,34 @@ async def delete_chat_session(
         )
     )
     session = result.scalar_one_or_none()
-    
+
     if not session:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Chat session not found"
         )
-    
+
     await db.delete(session)
     await db.commit()
-    
+
     return None
+
+
+@router.post("/explain-term", response_model=TermExplanationResponse)
+async def explain_term(
+    request: TermExplanationRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Offer contextual term explanations grounded in the paper.
+    Terms absent from the paper receive an explicitly labeled general definition.
+    """
+    return await learning_service.explain_term(
+        db=db,
+        document_id=request.document_id,
+        user_id=current_user.id,
+        term=request.term,
+        context=request.context,
+        page_number=request.page_number
+    )

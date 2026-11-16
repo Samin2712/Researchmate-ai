@@ -5,6 +5,7 @@ import { authService } from './authService'
 import { collectionService } from './collectionService'
 import * as analysisService from './analysisService'
 import * as gapService from './gapDisagreementService'
+import { learningService } from './learningService'
 import type { AnalysisKind } from '../types/analysis'
 
 export const useDocuments = () =>
@@ -173,3 +174,13 @@ export const useSaveRelationshipEvidence = () => {
     onSuccess: () => { void queryClient.invalidateQueries({ queryKey: ['evidence-notes'] }) },
   })
 }
+
+export const useDocumentQuestions = (documentId: number | null | undefined, enabled = true) =>
+  useQuery({
+    queryKey: ['document-questions', documentId],
+    queryFn: ({ signal }) => learningService.getQuestions(documentId!, signal),
+    enabled: !!documentId && enabled,
+    refetchInterval: (query) =>
+      query.state.data?.status === 'pending' ? 3000 : false,
+    staleTime: 60000,
+  })

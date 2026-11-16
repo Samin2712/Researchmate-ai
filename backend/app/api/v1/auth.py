@@ -38,13 +38,13 @@ async def register(
     # Check if user already exists
     result = await db.execute(select(User).where(email_match(str(user_data.email))))
     existing_user = result.scalar_one_or_none()
-    
+
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered"
         )
-    
+
     # Create new user
     new_user = User(
         email=str(user_data.email).strip().lower(),
@@ -52,11 +52,11 @@ async def register(
         full_name=user_data.full_name,
         is_active=True
     )
-    
+
     db.add(new_user)
     await db.commit()
     await db.refresh(new_user)
-    
+
     return new_user
 
 
@@ -71,27 +71,27 @@ async def login(
     # Get user by email
     result = await db.execute(select(User).where(email_match(form_data.username)))
     user = result.scalar_one_or_none()
-    
+
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Inactive user"
         )
-    
+
     # Create access token
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": user.email},
         expires_delta=access_token_expires
     )
-    
+
     return {
         "access_token": access_token,
         "token_type": "bearer"
@@ -109,27 +109,27 @@ async def login_json(
     # Get user by email
     result = await db.execute(select(User).where(email_match(str(user_data.email))))
     user = result.scalar_one_or_none()
-    
+
     if not user or not verify_password(user_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Inactive user"
         )
-    
+
     # Create access token
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": user.email},
         expires_delta=access_token_expires
     )
-    
+
     return {
         "access_token": access_token,
         "token_type": "bearer"
@@ -161,6 +161,8 @@ async def update_profile(
     for field in ('institution', 'bio', 'research_interests'):
         value = getattr(data, field)
         setattr(current_user.profile, field, value.strip() or None if value else None)
+    if data.default_explanation_mode is not None:
+        current_user.profile.default_explanation_mode = data.default_explanation_mode
     await db.commit()
     await db.refresh(current_user)
     return current_user

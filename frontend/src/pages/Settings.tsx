@@ -1,13 +1,37 @@
-import { ShieldCheck, UserRound } from 'lucide-react'
-import { useQueryClient } from '@tanstack/react-query'
+import { ShieldCheck, UserRound, Sparkles } from 'lucide-react'
+import { useQueryClient, useMutation } from '@tanstack/react-query'
 import { useUser } from '../services/queries'
 import { useAuth } from '../store/auth'
 import { usePreferences } from '../store/preferences'
+import { authService } from '../services/authService'
+import { toast } from '../store/toasts'
 import { Link } from 'react-router-dom'
+import { errorMessage } from '../services/api'
+
 export default function Settings() {
   const { data: user } = useUser()
-  const { reduceMotion, setReduceMotion } = usePreferences()
+  const { reduceMotion, setReduceMotion, defaultExplanationMode, setDefaultExplanationMode } =
+    usePreferences()
   const client = useQueryClient()
+
+  const currentMode = user?.default_explanation_mode || defaultExplanationMode || 'standard'
+
+  const updateMode = useMutation({
+    mutationFn: async (mode: 'standard' | 'simple') => {
+      if (user) {
+        await authService.updateProfile({
+          full_name: user.full_name || '',
+          default_explanation_mode: mode,
+        })
+      }
+    },
+    onSuccess: (_, mode) => {
+      setDefaultExplanationMode(mode)
+      void client.invalidateQueries({ queryKey: ['user'] })
+      toast('Default explanation style updated.')
+    },
+    onError: (error) => toast(errorMessage(error), 'error'),
+  })
   return (
     <div className="page narrow-page">
       <header className="page-heading">
@@ -36,6 +60,51 @@ export default function Settings() {
           </div>
         </dl>
         <Link className="button secondary small" to="/profile">Edit profile and photo</Link>
+      </section>
+      <section className="settings-section">
+        <h2>
+          <Sparkles size={20} />
+          Explanation style preference
+        </h2>
+        <p className="text-sm text-slate-600 mb-4">
+          Choose your preferred default style for AI research answers. You can always override this
+          per question in the chat composer.
+        </p>
+        <div className="space-y-3">
+          <label className="setting-row cursor-pointer" htmlFor="mode-standard">
+            <span>
+              <strong>Standard academic</strong>
+              <small>
+                Detailed academic explanations with full domain terminology and precision.
+              </small>
+            </span>
+            <input
+              id="mode-standard"
+              name="explanation-mode"
+              type="radio"
+              checked={currentMode === 'standard'}
+              disabled={updateMode.isPending || !user}
+              onChange={() => updateMode.mutate('standard')}
+            />
+          </label>
+          <label className="setting-row cursor-pointer" htmlFor="mode-simple">
+            <span>
+              <strong>Explain simply (beginner friendly)</strong>
+              <small>
+                Plain language, defined terms, and intuitive analogies, strictly preserving numerical
+                results and citations.
+              </small>
+            </span>
+            <input
+              id="mode-simple"
+              name="explanation-mode"
+              type="radio"
+              checked={currentMode === 'simple'}
+              disabled={updateMode.isPending || !user}
+              onChange={() => updateMode.mutate('simple')}
+            />
+          </label>
+        </div>
       </section>
       <section className="settings-section">
         <h2>Motion preferences</h2>

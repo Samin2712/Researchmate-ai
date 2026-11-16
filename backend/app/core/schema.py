@@ -22,6 +22,23 @@ def upgrade_schema(connection):
             if name not in existing:
                 sql_type = Chunk.__table__.c[name].type.compile(dialect=connection.dialect)
                 connection.exec_driver_sql(f'ALTER TABLE chunks ADD COLUMN {name} {sql_type}')
+
+    from app.models.chat import ChatMessage
+    if inspector.has_table("chat_messages"):
+        existing = {column["name"] for column in inspector.get_columns("chat_messages")}
+        if "explanation_mode" not in existing:
+            sql_type = ChatMessage.__table__.c["explanation_mode"].type.compile(dialect=connection.dialect)
+            connection.exec_driver_sql(f"ALTER TABLE chat_messages ADD COLUMN explanation_mode {sql_type} DEFAULT 'standard'")
+            connection.exec_driver_sql("UPDATE chat_messages SET explanation_mode = 'standard' WHERE explanation_mode IS NULL")
+
+    from app.models.user import UserProfile
+    if inspector.has_table("user_profiles"):
+        existing = {column["name"] for column in inspector.get_columns("user_profiles")}
+        if "default_explanation_mode" not in existing:
+            sql_type = UserProfile.__table__.c["default_explanation_mode"].type.compile(dialect=connection.dialect)
+            connection.exec_driver_sql(f"ALTER TABLE user_profiles ADD COLUMN default_explanation_mode {sql_type} DEFAULT 'standard'")
+            connection.exec_driver_sql("UPDATE user_profiles SET default_explanation_mode = 'standard' WHERE default_explanation_mode IS NULL")
+
     Base.metadata.create_all(connection)
     if connection.dialect.name == "postgresql":
         connection.exec_driver_sql("ALTER TYPE analysiskind ADD VALUE IF NOT EXISTS 'gap_analysis'")

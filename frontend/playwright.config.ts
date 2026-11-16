@@ -25,7 +25,7 @@ export default defineConfig({
     },
     { name: 'edge', use: { ...devices['Desktop Edge'], channel: 'msedge' } },
   ],
-  webServer: {
+  webServer: process.env.E2E_EXTERNAL_SERVERS ? undefined : {
     command: 'npm run build && npm run preview -- --host 127.0.0.1 --port 5173',
     url: 'http://localhost:5173',
     timeout: 120000,

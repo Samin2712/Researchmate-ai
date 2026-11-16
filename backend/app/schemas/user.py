@@ -32,7 +32,8 @@ class UserResponse(UserBase):
     bio: Optional[str] = None
     research_interests: Optional[str] = None
     avatar_url: Optional[str] = None
-    
+    default_explanation_mode: Optional[str] = "standard"
+
     class Config:
         from_attributes = True
 
@@ -42,6 +43,7 @@ class ProfileUpdate(BaseModel):
     institution: Optional[str] = Field(default=None, max_length=200)
     bio: Optional[str] = Field(default=None, max_length=1000)
     research_interests: Optional[str] = Field(default=None, max_length=500)
+    default_explanation_mode: Optional[str] = Field(default=None, pattern="^(standard|simple)$")
 
 
 class Token(BaseModel):

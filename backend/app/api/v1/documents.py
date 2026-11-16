@@ -21,6 +21,8 @@ from app.schemas.document import (
     DocumentListResponse,
     DocumentUpdate
 )
+from app.schemas.learning import DocumentQuestionSetResponse
+from app.schemas.chat import TermExplanationRequest, TermExplanationResponse
 from app.services.document_processor import document_processor
 from app.services.ingestion_pipeline import ingestion_pipeline
 
@@ -84,6 +86,15 @@ async def _process_document(document_id: int, file_path: str, user_id: int, db: 
 
             await db.commit()
             logger.info(f"✅ Document {document_id} processed: {result.get('chunks_created')} chunks created")
+
+            # Secondary optional work: generate starter questions (failure never fails ingestion)
+            try:
+                from app.services.learning_service import learning_service
+                await learning_service.get_or_schedule_starter_questions(
+                    db, document.id, document.user_id, force_regenerate=True,
+                )
+            except Exception as q_err:
+                logger.warning(f"Could not queue starter questions for {document_id}: {q_err}")
         elif document:
             # Processing failed
             document.status = DocumentStatus.FAILED
@@ -423,3 +434,62 @@ async def delete_document(
 
     logger.info(f"✅ Deleted document {document_id}")
     return None
+
+
+@router.get("/{document_id}/questions", response_model=DocumentQuestionSetResponse)
+async def get_starter_questions(
+    document_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Get grounded starter questions for a completed paper.
+    Read only: missing questions return unavailable; generation requires ingestion or POST.
+    """
+    from app.services.learning_service import learning_service
+    return await learning_service.get_or_schedule_starter_questions(
+        db=db,
+        document_id=document_id,
+        user_id=current_user.id,
+        force_regenerate=False,
+    )
+
+
+@router.post("/{document_id}/questions/regenerate", response_model=DocumentQuestionSetResponse)
+async def regenerate_starter_questions(
+    document_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Explicitly trigger regeneration of paper-specific starter questions.
+    Rate-limited and deduplicated.
+    """
+    from app.services.learning_service import learning_service
+    return await learning_service.get_or_schedule_starter_questions(
+        db=db,
+        document_id=document_id,
+        user_id=current_user.id,
+        force_regenerate=True,
+    )
+
+
+@router.post("/{document_id}/explain-term", response_model=TermExplanationResponse)
+async def explain_document_term(
+    document_id: int,
+    request: TermExplanationRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Contextual term explanation grounded in this specific document.
+    """
+    from app.services.learning_service import learning_service
+    return await learning_service.explain_term(
+        db=db,
+        document_id=document_id,
+        user_id=current_user.id,
+        term=request.term,
+        context=request.context,
+        page_number=request.page_number
+    )

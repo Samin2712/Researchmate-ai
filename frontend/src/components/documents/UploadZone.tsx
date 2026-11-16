@@ -1,10 +1,14 @@
 import { useEffect, useRef, useState, type DragEvent } from 'react'
 import { CheckCircle2, FileUp, UploadCloud, X } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { motion } from 'motion/react'
 import { useQueryClient } from '@tanstack/react-query'
+import type { Document } from '../../types'
 import { documentService, MAX_UPLOAD_BYTES, validateFile } from '../../services/documentService'
 import { errorMessage } from '../../services/api'
 import { toast } from '../../store/toasts'
+import { StarterQuestions } from './StarterQuestions'
+import { useDocuments } from '../../services/queries'
 
 export function UploadZone() {
   const client = useQueryClient()
@@ -16,6 +20,9 @@ export function UploadZone() {
   const [file, setFile] = useState<File | null>(null)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [lastUploadedDoc, setLastUploadedDoc] = useState<Document | null>(null)
+  const { data: library } = useDocuments()
+  const uploadedDoc = library?.documents.find((doc) => doc.id === lastUploadedDoc?.id) || lastUploadedDoc
   useEffect(() => () => controller.current?.abort(), [])
   async function upload(selected: File) {
     if (busy) return
@@ -38,7 +45,8 @@ export function UploadZone() {
         setError('This file is not a valid PDF. Export it as a PDF and try again.')
         return
       }
-      await documentService.upload(selected, setProgress, abort.signal)
+      const uploaded = await documentService.upload(selected, setProgress, abort.signal)
+      setLastUploadedDoc(uploaded)
       setSuccess(`${selected.name} uploaded. Processing will continue in your library.`)
       setFile(null)
       toast('Paper uploaded. We’re preparing it for research.')
@@ -145,6 +153,35 @@ export function UploadZone() {
           <CheckCircle2 size={17} />
           {success}
         </p>
+      )}
+      {lastUploadedDoc && (
+        <div className="mt-4 p-4 border border-teal-200 rounded-lg bg-white shadow-xs">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <span className="text-xs font-semibold text-teal-800 uppercase tracking-wider">
+                Paper starter questions
+              </span>
+              <h3 className="text-sm font-semibold text-slate-900 mt-0.5">
+                {lastUploadedDoc.title}
+              </h3>
+            </div>
+            <Link
+              to={`/chat?document=${lastUploadedDoc.id}`}
+              className="button secondary small inline-flex items-center gap-1"
+            >
+              <span>Chat about this paper</span>
+            </Link>
+          </div>
+          {uploadedDoc?.status === 'completed' ? (
+            <StarterQuestions documentId={uploadedDoc.id} documentTitle={uploadedDoc.title} />
+          ) : (
+            <p role="status" className="text-sm text-slate-600">
+              {uploadedDoc?.status === 'failed'
+                ? 'Paper processing failed. Retry processing in the library to prepare starter questions.'
+                : 'Processing your paper. Starter questions will appear when it is ready.'}
+            </p>
+          )}
+        </div>
       )}
     </section>
   )

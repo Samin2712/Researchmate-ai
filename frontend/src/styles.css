@@ -1,6 +1,7 @@
 @import '@fontsource-variable/dm-sans/index.css';
 @import '@fontsource-variable/manrope/index.css';
 @import './styles-gaps.css';
+@import './styles-learning.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
