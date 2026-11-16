@@ -1,0 +1,38 @@
+{
+  "verified_date": "2026-11-17",
+  "timezone": "Asia/Dhaka",
+  "repository": "https://github.com/Samin2712/Researchmate-ai",
+  "backend": {
+    "commit": "4f720caa2d508b701091df49c93b455029709546",
+    "deploy_id": "dep-dbtlsutg1s2s738mtpi0",
+    "status": "live",
+    "url": "https://researchmate-backend-djg9.onrender.com",
+    "database": "postgresql",
+    "vectors": "database",
+    "model": "gemini-2.5-flash"
+  },
+  "frontend": {
+    "commit": "8618b590a80fbf4a507a4a579d125ae9b098904e",
+    "deploy_id": "dep-dbtlpe5ckfvc73b2u84g",
+    "status": "live",
+    "url": "https://researchmate-frontend.onrender.com",
+    "source_note": "No frontend source changes in backend correction 4f720ca; the deployed frontend tree matches that release."
+  },
+  "tests": {
+    "backend_full_passed": 108,
+    "backend_focused_passed": 28,
+    "frontend_unit_passed": 27,
+    "browser_regression_passed": 15,
+    "browser_regression_skipped": 1,
+    "real_pdf_browser_passed": 1,
+    "launcher_passed": 8,
+    "build": "passed",
+    "lint": "passed",
+    "fresh_migration": "passed"
+  },
+  "evidence": [
+    "learning-local-live.json",
+    "learning-hosted-live.json",
+    "learning-hosted-ui.json"
+  ]
+}
