@@ -87,7 +87,7 @@ test('compare, inspect evidence, review, edit, save, reload and export', async (
   await page.getByRole('button',{name:'Back',exact:true}).click()
   // History links resolve their mode from the URL.
   await page.getByRole('button',{name:'Open comparison analysis'}).click()
-  await expect(page.getByRole('heading',{name:'Comparison Matrix',exact:true})).toBeVisible()
+  await expect(page.getByRole('heading',{name:'Comparison Matrix',exact:true,level:1})).toBeVisible()
   await page.getByRole('button',{name:'Back',exact:true}).click()
   failNext=true
   await page.getByRole('button',{name:/Start comparison/}).click()
