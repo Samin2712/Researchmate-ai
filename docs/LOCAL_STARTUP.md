@@ -31,6 +31,24 @@ Use Ctrl+C to stop the servers started by the launcher. Healthy existing Researc
 the launcher does not stop reused servers. An unrelated application on either port produces an explicit error.
 Vite supports frontend hot reload. Restart this command after backend Python changes.
 
+## Browser verification
+
+Start `npm run dev` in one terminal and wait until both local URLs are printed. In another terminal:
+
+```powershell
+npm.cmd run doctor
+npm.cmd run test:e2e:install --prefix frontend
+npm.cmd run test:e2e --prefix frontend
+npm.cmd run test:e2e:live --prefix frontend
+```
+
+The browser installation downloads Playwright's matching Chromium binary for both the desktop and
+mobile projects. The Edge project additionally requires Microsoft Edge installed on the machine.
+The default browser suite can skip the live flow when the backend is unavailable; the dedicated
+`test:e2e:live` command fails in that situation, so a skipped test cannot be reported as live verification.
+Live checks use the configured AI provider and require working credentials, network access and quota.
+The live browser flow creates a verification account and uploads the synthetic sample paper.
+
 ## Configuration
 
 Settings load the root `.env`, then `backend/.env`. For the local npm launcher, the database in

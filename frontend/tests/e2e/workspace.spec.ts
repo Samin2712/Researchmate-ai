@@ -372,6 +372,15 @@ test('live backend: register, upload, chat, logout', async ({ page, request }) =
   const health = await request
     .get('http://localhost:8000/health', { timeout: 5000 })
     .catch(() => null)
+  if (
+    process.env.E2E_REQUIRE_BACKEND === '1' ||
+    process.env.npm_lifecycle_event === 'test:e2e:live'
+  ) {
+    expect(
+      health?.ok(),
+      'Live verification requires a healthy backend on localhost:8000. Run npm run dev first.',
+    ).toBe(true)
+  }
   test.skip(
     !health?.ok(),
     'Backend is unreachable on localhost:8000; live integration cannot be verified',

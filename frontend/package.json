@@ -10,6 +10,8 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "test:e2e:install": "playwright install chromium",
+    "test:e2e:live": "playwright test workspace.spec.ts --project=chromium --grep \"live backend\"",
     "preview": "vite preview --host 0.0.0.0"
   },
   "dependencies": {
