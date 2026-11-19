@@ -54,6 +54,16 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "your-secret-key-change-in-production"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+
+    # Authentication providers (independent of the Gemini GOOGLE_API_KEY).
+    GOOGLE_CLIENT_ID: Optional[str] = None
+    FRONTEND_URL: str = 'http://localhost:5173'
+    GMAIL_CLIENT_ID: Optional[str] = None
+    GMAIL_CLIENT_SECRET: Optional[str] = None
+    GMAIL_REFRESH_TOKEN: Optional[str] = None
+    EMAIL_FROM: str = 'ResearchMate AI <researchmateai123@gmail.com>'
+    EMAIL_VERIFICATION_EXPIRE_MINUTES: int = Field(default=60, ge=5, le=1440)
+    PASSWORD_RESET_EXPIRE_MINUTES: int = Field(default=30, ge=5, le=60)
     
     # File Upload
     UPLOAD_DIR: str = "./uploads"

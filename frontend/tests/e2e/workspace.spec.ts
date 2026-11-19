@@ -50,6 +50,7 @@ async function mockAPI(
     const json = (body: unknown, status = 200) =>
       route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) })
     if (method === 'OPTIONS') return route.fulfill({ status: 204 })
+    if (path === '/auth/providers') return json({ google_client_id: null })
     if (path === '/auth/register')
       return json(
         {

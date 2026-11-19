@@ -1,6 +1,25 @@
 import { api } from './api'
 import type { User } from '../types'
 export const authService = {
+  verifyEmail: async (token: string) =>
+    (await api.post<{ message: string }>('/auth/verify-email', { token })).data,
+  resendVerification: async (email: string) =>
+    (await api.post<{ message: string }>('/auth/resend-verification', { email })).data,
+  providers: async () =>
+    (await api.get<{ google_client_id: string | null }>('/auth/providers')).data,
+  google: async (credential: string) =>
+    (await api.post<{ access_token: string }>('/auth/google', { credential })).data,
+  forgotPassword: async (email: string) =>
+    (await api.post<{ message: string }>('/auth/forgot-password', { email })).data,
+  resetPassword: async (token: string, new_password: string) =>
+    (await api.post<{ message: string }>('/auth/reset-password', { token, new_password })).data,
+  changePassword: async (current_password: string, new_password: string) =>
+    (
+      await api.post<{ message: string }>('/auth/change-password', {
+        current_password,
+        new_password,
+      })
+    ).data,
   me: async () => (await api.get<User>('/auth/me')).data,
   updateProfile: async (data: {
     full_name: string

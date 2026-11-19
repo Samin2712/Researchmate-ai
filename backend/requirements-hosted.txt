@@ -17,6 +17,7 @@ python-dotenv>=1.0,<2
 aiofiles>=24,<26
 httpx>=0.28,<1
 google-genai>=1,<2
+google-auth[requests]>=2.38,<3
 openai>=1.60,<2
 anthropic>=0.45,<1
 

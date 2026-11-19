@@ -12,7 +12,7 @@ import {
   BookmarkPlus,
   GitCompare,
 } from 'lucide-react'
-import { NavLink } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../../store/auth'
 import { useUser } from '../../services/queries'
@@ -38,6 +38,7 @@ export function Brand() {
   )
 }
 export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
+  const navigate = useNavigate()
   const { data: user } = useUser()
   const queryClient = useQueryClient()
   const { openNotebook } = useEvidenceStore()
@@ -45,6 +46,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const logout = () => {
     useAuth.getState().logout()
     queryClient.clear()
+    navigate('/login')
   }
 
   const handleOpenNotebook = () => {

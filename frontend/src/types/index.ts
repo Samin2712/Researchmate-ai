@@ -1,4 +1,6 @@
 export interface User {
+  email_verified?: boolean
+  auth_provider?: 'password' | 'google'
   id: number
   email: string
   full_name: string | null

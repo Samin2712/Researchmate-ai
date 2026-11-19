@@ -5,8 +5,16 @@ import { MotionConfig } from 'motion/react'
 import Layout from './components/shared/Layout'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import PasswordRecovery from './pages/PasswordRecovery'
+import VerifyEmail from './pages/VerifyEmail'
+import Home from './pages/Home'
+import Legal from './pages/Legal'
 import { ErrorState, Loading } from './components/shared/Feedback'
-import { SourceVerificationPanel, SaveEvidenceDialog, EvidenceNotebook } from './components/evidence'
+import {
+  SourceVerificationPanel,
+  SaveEvidenceDialog,
+  EvidenceNotebook,
+} from './components/evidence'
 import { useAuth, tokenExpiry } from './store/auth'
 import { useEvidenceStore } from './store/evidence'
 import { usePreferences } from './store/preferences'
@@ -90,8 +98,15 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route element={<ProtectedRoute />}>
+          <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/forgot-password" element={<PasswordRecovery key="forgot" />} />
+          <Route path="/reset-password" element={<PasswordRecovery key="reset" reset />} />
+          <Route path="/privacy" element={<Legal kind="privacy" />} />
+          <Route path="/terms" element={<Legal kind="terms" />} />
+          <Route path="/" element={token ? <ProtectedRoute /> : <Home />}>
             <Route index element={<Dashboard />} />
+          </Route>
+          <Route element={<ProtectedRoute />}>
             <Route path="library" element={<Library />} />
             <Route path="chat" element={<Chat />} />
             <Route path="graph" element={<Graph />} />

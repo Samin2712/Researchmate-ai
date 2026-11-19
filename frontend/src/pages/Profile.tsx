@@ -7,6 +7,7 @@ import { errorMessage } from '../services/api'
 import { useAuth } from '../store/auth'
 import { toast } from '../store/toasts'
 import type { User } from '../types'
+import ChangePassword from '../components/shared/ChangePassword'
 
 function ProfileForm({ user }: { user: User }) {
   const client = useQueryClient()
@@ -191,6 +192,22 @@ function ProfileForm({ user }: { user: User }) {
           </button>
         </div>
       </form>
+      {user.auth_provider === 'google' ? (
+        <section className="settings-section">
+          <h2>Sign-in method</h2>
+          <p>You sign in with Google. Manage your password in your Google account.</p>
+          <a
+            className="text-button"
+            href="https://myaccount.google.com/security"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Google account security
+          </a>
+        </section>
+      ) : (
+        <ChangePassword />
+      )}
       <section className="settings-section">
         <h2>Session</h2>
         <button

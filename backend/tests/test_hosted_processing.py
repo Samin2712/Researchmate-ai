@@ -17,6 +17,9 @@ sys.meta_path.insert(0, BlockML())
 from fastapi.testclient import TestClient
 from app.main import app
 from app.services.embedder import embedder
+from unittest.mock import AsyncMock
+import app.api.v1.auth as auth_api
+auth_api.send_verification_email = AsyncMock(return_value='test-message')
 embedder._embed_remote = lambda texts, task: [[1.0] + [0.0] * 767 for _ in texts]
 '''
     first = setup + r'''
@@ -25,6 +28,7 @@ from io import BytesIO
 from PIL import Image
 with TestClient(app) as client:
     assert client.post('/api/v1/auth/register', json={'email': 'durable@example.com', 'password': 'password123', 'full_name': 'Ada'}).status_code == 201
+    assert client.post('/api/v1/auth/verify-email', json={'token': auth_api.send_verification_email.call_args.args[1]}).status_code == 200
     token = client.post('/api/v1/auth/login/json', json={'email': 'durable@example.com', 'password': 'password123'}).json()['access_token']
     headers = {'Authorization': 'Bearer ' + token}
     assert client.patch('/api/v1/auth/me', headers=headers, json={'full_name': 'Ada Researcher', 'institution': 'STEM Lab'}).status_code == 200
@@ -84,6 +88,7 @@ with TestClient(app) as client:
            'DATABASE_URL': 'sqlite+aiosqlite:///' + (tmp_path / 'durable.db').as_posix(),
            'UPLOAD_DIR': str(tmp_path / 'uploads'), 'LOG_FILE': str(tmp_path / 'app.log'),
            'EMBEDDING_PROVIDER': 'gemini', 'VECTOR_STORE_MODE': 'database', 'DEBUG': 'false'}
+    env.update(GMAIL_CLIENT_ID='test-client', GMAIL_CLIENT_SECRET='test-secret', GMAIL_REFRESH_TOKEN='test-token', FRONTEND_URL='http://localhost:5173')
     for script in (first, second):
         result = subprocess.run([sys.executable, '-c', script], env=env,
                                 cwd=Path(__file__).resolve().parents[1],

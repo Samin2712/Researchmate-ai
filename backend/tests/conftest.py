@@ -3,6 +3,7 @@ Pytest configuration and fixtures
 """
 import pytest
 import asyncio
+from unittest.mock import AsyncMock
 from typing import AsyncGenerator, Generator
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -43,7 +44,22 @@ async def test_db() -> AsyncGenerator[AsyncSession, None]:
 
 
 @pytest.fixture
-async def client(test_db: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
+def verification_mail(monkeypatch):
+    """Mock the external mail boundary; tests still explicitly click verification links."""
+    monkeypatch.setattr(settings, 'GMAIL_CLIENT_ID', 'gmail-test-client')
+    monkeypatch.setattr(settings, 'GMAIL_CLIENT_SECRET', 'gmail-test-secret')
+    monkeypatch.setattr(settings, 'GMAIL_REFRESH_TOKEN', 'gmail-test-refresh')
+    monkeypatch.setattr(settings, 'FRONTEND_URL', 'http://localhost:5173')
+    sender = AsyncMock(return_value='gmail-message-id')
+    import app.api.v1.auth as auth_api
+    import app.api.v1.account_security as security_api
+    monkeypatch.setattr(auth_api, 'send_verification_email', sender)
+    monkeypatch.setattr(security_api, 'send_verification_email', sender)
+    return sender
+
+
+@pytest.fixture
+async def client(test_db: AsyncSession, verification_mail) -> AsyncGenerator[AsyncClient, None]:
     """Create test client"""
     async def override_get_db():
         yield test_db

@@ -1,5 +1,13 @@
 # Keep Render accounts and papers across restarts
 
+## Current public URLs and authentication
+
+The existing Render services use `https://researchmate-frontend.onrender.com` for the frontend and `https://researchmate-backend-djg9.onrender.com` for the backend. The frontend's `VITE_API_URL` must be the latter URL followed by `/api/v1`.
+
+Set the backend's `FRONTEND_URL` and `CORS_ORIGINS` to the exact HTTPS frontend origin. Add `GOOGLE_CLIENT_ID`, `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN`, and `EMAIL_FROM` as backend environment variables only. Preserve the existing production `DATABASE_URL`, `SECRET_KEY`, Gemini configuration, and hosted database/vector settings; do not copy the local SQLite configuration into Render. See `AUTHENTICATION_SETUP.md` for the owner-only Gmail OAuth authorization steps.
+
+The logged-out `/` route is a public product homepage. `/privacy` and `/terms` are public policy pages and remain accessible without signing in. Keep the frontend's `/*` to `/index.html` rewrite for these routes and email-verification/password-reset links. Logged-in users keep their dashboard at `/`.
+
 The deployed environment must be changed as well as deploying this code. Local
 SQLite files on Render's ephemeral filesystem disappear on restart/redeployment.
 Code cannot recover accounts or files already removed by the host.

@@ -1,4 +1,5 @@
 import { BookOpen, MessagesSquare, Network } from 'lucide-react'
+import { PolicyLinks } from '../components/shared/PublicLayout'
 export default function About() {
   return (
     <div className="page narrow-page">
@@ -51,6 +52,7 @@ export default function About() {
           them.
         </p>
       </div>
+      <PolicyLinks />
     </div>
   )
 }

@@ -7,6 +7,8 @@ import { errorMessage } from '../services/api'
 import { useAuth } from '../store/auth'
 import { Brand } from '../components/shared/Sidebar'
 import { ErrorState } from '../components/shared/Feedback'
+import GoogleSignIn from '../components/shared/GoogleSignIn'
+import { PolicyLinks } from '../components/shared/PublicLayout'
 export function AuthForm({ register = false }: { register?: boolean }) {
   const navigate = useNavigate()
   const { token, expired, setToken } = useAuth()
@@ -34,7 +36,11 @@ export function AuthForm({ register = false }: { register?: boolean }) {
     setError('')
     try {
       if (register && !registered) {
-        await authService.register(email, password, name)
+        const account = await authService.register(email, password, name)
+        if (account.email_verified === false) {
+          navigate(`/verify-email?email=${encodeURIComponent(email)}`)
+          return
+        }
         setRegistered(true)
       }
       const result = await authService.login(email, password)
@@ -115,6 +121,7 @@ export function AuthForm({ register = false }: { register?: boolean }) {
               Your account was created. Sign in to continue.
             </div>
           )}
+          <GoogleSignIn />
           <form onSubmit={submit} className="form-stack">
             {register && (
               <label>
@@ -175,6 +182,12 @@ export function AuthForm({ register = false }: { register?: boolean }) {
                 />
               </label>
             )}
+            {!register && (
+              <>
+                <Link to="/forgot-password">Forgot password?</Link>
+                <Link to="/verify-email">Verify email / resend verification</Link>
+              </>
+            )}
             {error && <ErrorState message={error} />}
             <button className="button primary auth-submit" disabled={busy}>
               {busy
@@ -196,6 +209,7 @@ export function AuthForm({ register = false }: { register?: boolean }) {
             </Link>
           </p>
           <p className="auth-fine">Built for focused reading and evidence-backed thinking.</p>
+          <PolicyLinks />
         </motion.div>
       </main>
     </div>

@@ -5,11 +5,12 @@ import pytest
 from PIL import Image
 
 
-async def account(client, email='profile@example.com'):
+async def account(client, verification_mail, email='profile@example.com'):
     response = await client.post('/api/v1/auth/register', json={
         'email': email, 'password': 'password123', 'full_name': 'Researcher',
     })
     assert response.status_code == 201
+    assert (await client.post('/api/v1/auth/verify-email', json={'token': verification_mail.call_args.args[1]})).status_code == 200
     login = await client.post('/api/v1/auth/login/json', json={
         'email': email, 'password': 'password123',
     })
@@ -17,8 +18,8 @@ async def account(client, email='profile@example.com'):
 
 
 @pytest.mark.asyncio
-async def test_profile_and_photo_survive_new_login_and_are_private(client):
-    headers = await account(client)
+async def test_profile_and_photo_survive_new_login_and_are_private(client, verification_mail):
+    headers = await account(client, verification_mail)
     updated = await client.patch('/api/v1/auth/me', headers=headers, json={
         'full_name': 'Ada Researcher', 'institution': 'STEM Lab',
         'bio': 'Studying language models', 'research_interests': 'NLP',
@@ -42,7 +43,7 @@ async def test_profile_and_photo_survive_new_login_and_are_private(client):
     assert restored.json()['institution'] == 'STEM Lab'
     assert restored.json()['full_name'] == 'Ada Researcher'
     assert restored.json()['avatar_url'] == uri
-    other_headers = await account(client, 'other@example.com')
+    other_headers = await account(client, verification_mail, 'other@example.com')
     other = await client.get('/api/v1/auth/me', headers=other_headers)
     assert other.json()['avatar_url'] is None
     assert other.json()['institution'] is None
@@ -52,10 +53,10 @@ async def test_profile_and_photo_survive_new_login_and_are_private(client):
 
 
 @pytest.mark.asyncio
-async def test_profile_requires_login_and_rejects_invalid_photos(client):
+async def test_profile_requires_login_and_rejects_invalid_photos(client, verification_mail):
     response = await client.patch('/api/v1/auth/me', json={'full_name': 'Somebody'})
     assert response.status_code == 401
-    headers = await account(client)
+    headers = await account(client, verification_mail)
     for data in (b'<svg>unsafe</svg>', b'x' * (2 * 1024 * 1024 + 1)):
         response = await client.post('/api/v1/auth/me/photo', headers=headers,
                                      files={'file': ('fake.png', data, 'image/png')})

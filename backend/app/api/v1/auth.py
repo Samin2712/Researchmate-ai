@@ -1,11 +1,13 @@
 """
 Authentication API endpoints
 """
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from datetime import timedelta
+from datetime import datetime, timedelta
+import hashlib
+import secrets
 
 from app.core.database import get_db
 from app.core.security import (
@@ -15,7 +17,8 @@ from app.core.security import (
     get_current_user
 )
 from app.core.config import settings
-from app.models.user import User, UserProfile
+from app.models.user import User, UserProfile, EmailVerification
+from app.services.account_security import email_configured, send_verification_email, throttle, MailDeliveryError
 from app.schemas.user import UserCreate, UserLogin, UserResponse, Token, ProfileUpdate
 from app.services.profile_photo import make_profile_photo
 
@@ -30,11 +33,13 @@ def email_match(email: str):
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register(
     user_data: UserCreate,
+    request: Request,
     db: AsyncSession = Depends(get_db)
 ):
     """
     Register a new user
     """
+    await throttle(db, 'register-ip', request.client.host if request.client else 'unknown', 20)
     # Check if user already exists
     result = await db.execute(select(User).where(email_match(str(user_data.email))))
     existing_user = result.scalar_one_or_none()
@@ -45,6 +50,11 @@ async def register(
             detail="Email already registered"
         )
 
+    if not email_configured():
+        raise HTTPException(503, 'Email verification is unavailable. Please try again later.')
+    if len(user_data.password.encode('utf-8')) > 72:
+        raise HTTPException(422, 'Use a password of 72 UTF-8 bytes or fewer.')
+
     # Create new user
     new_user = User(
         email=str(user_data.email).strip().lower(),
@@ -54,6 +64,17 @@ async def register(
     )
 
     db.add(new_user)
+    token = secrets.token_urlsafe(32)
+    new_user.email_verification = EmailVerification(
+        token_hash=hashlib.sha256(token.encode()).hexdigest(),
+        expires_at=datetime.utcnow() + timedelta(minutes=settings.EMAIL_VERIFICATION_EXPIRE_MINUTES),
+    )
+    await db.flush()
+    try:
+        await send_verification_email(new_user.email, token)
+    except MailDeliveryError:
+        await db.rollback()
+        raise HTTPException(503, 'The verification email could not be sent. Please try again later.')
     await db.commit()
     await db.refresh(new_user)
 
@@ -72,7 +93,7 @@ async def login(
     result = await db.execute(select(User).where(email_match(form_data.username)))
     user = result.scalar_one_or_none()
 
-    if not user or not verify_password(form_data.password, user.hashed_password):
+    if not user or user.auth_provider != 'password' or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
@@ -85,10 +106,13 @@ async def login(
             detail="Inactive user"
         )
 
+    if not user.email_verified:
+        raise HTTPException(403, 'Verify your email address before signing in. You can resend the verification email.')
+
     # Create access token
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": user.email},
+        data={"sub": user.email, "ver": user.session_version},
         expires_delta=access_token_expires
     )
 
@@ -110,7 +134,7 @@ async def login_json(
     result = await db.execute(select(User).where(email_match(str(user_data.email))))
     user = result.scalar_one_or_none()
 
-    if not user or not verify_password(user_data.password, user.hashed_password):
+    if not user or user.auth_provider != 'password' or not verify_password(user_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
@@ -123,10 +147,13 @@ async def login_json(
             detail="Inactive user"
         )
 
+    if not user.email_verified:
+        raise HTTPException(403, 'Verify your email address before signing in. You can resend the verification email.')
+
     # Create access token
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": user.email},
+        data={"sub": user.email, "ver": user.session_version},
         expires_delta=access_token_expires
     )
 

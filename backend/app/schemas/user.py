@@ -1,7 +1,7 @@
 """
 User Pydantic schemas
 """
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from datetime import datetime
 from typing import Optional
 
@@ -28,6 +28,8 @@ class UserResponse(UserBase):
     id: int
     is_active: bool
     created_at: datetime
+    auth_provider: str = 'password'
+    email_verified: bool = True
     institution: Optional[str] = None
     bio: Optional[str] = None
     research_interests: Optional[str] = None
@@ -55,3 +57,34 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     """Token payload data"""
     email: Optional[str] = None
+
+
+class ForgotPassword(BaseModel):
+    email: EmailStr
+
+
+class NewPassword(BaseModel):
+    new_password: str = Field(min_length=6, max_length=100)
+
+    @field_validator('new_password')
+    @classmethod
+    def password_bytes(cls, value):
+        if len(value.encode('utf-8')) > 72:
+            raise ValueError('Use a password of 72 UTF-8 bytes or fewer.')
+        return value
+
+
+class ResetPassword(NewPassword):
+    token: str = Field(min_length=32, max_length=256)
+
+
+class ChangePassword(NewPassword):
+    current_password: str = Field(min_length=1, max_length=100)
+
+
+class GoogleLogin(BaseModel):
+    credential: str = Field(min_length=1, max_length=8192)
+
+
+class VerifyEmail(BaseModel):
+    token: str = Field(min_length=32, max_length=256)

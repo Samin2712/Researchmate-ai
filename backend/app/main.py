@@ -13,6 +13,7 @@ import os
 
 from app.core.config import settings
 from app.api.v1 import auth, documents, chat, evidence, analysis
+from app.api.v1.account_security import router as account_security_router
 from app.api.v1.collections import (
     router as collections_router,
     tags_router,
@@ -165,6 +166,8 @@ async def liveness():
 
 
 # Include API routers
+app.include_router(account_security_router, prefix=f"{settings.API_V1_PREFIX}/auth", tags=['Authentication'])
+
 app.include_router(
     auth.router,
     prefix=f"{settings.API_V1_PREFIX}/auth",

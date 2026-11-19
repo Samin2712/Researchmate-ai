@@ -23,6 +23,8 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_PREFIX}/auth/lo
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against a hash"""
+    if hashed_password == '!':  # Google accounts have no local password.
+        return False
     return pwd_context.verify(plain_password, hashed_password)
 
 
@@ -40,7 +42,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     else:
         expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     
-    to_encode.update({"exp": expire})
+    to_encode.update({"exp": expire, "type": "access"})
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
 
@@ -83,9 +85,15 @@ async def get_current_user(
     
     if user is None:
         raise credentials_exception
+
+    if payload.get('type', 'access') != 'access' or payload.get('ver', 0) != user.session_version:
+        raise credentials_exception
     
     if not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
+
+    if not user.email_verified:
+        raise HTTPException(status_code=403, detail='Verify your email address before signing in.')
     
     return user
 

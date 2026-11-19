@@ -17,6 +17,7 @@ api.interceptors.response.use(
     if (
       axios.isAxiosError(error) &&
       error.response?.status === 401 &&
+      useAuth.getState().token &&
       !error.config?.url?.includes('/auth/login')
     ) {
       useAuth.getState().logout(true)

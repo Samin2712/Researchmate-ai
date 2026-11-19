@@ -14,6 +14,7 @@ def test_legacy_upgrade_preserves_data_and_can_repeat(tmp_path):
         assert {"collections", "tags", "document_tags", "collection_documents", "document_questions", "document_glossary"} <= set(inspect(conn).get_table_names())
         assert "explanation_mode" in {c["name"] for c in inspect(conn).get_columns("chat_messages")}
         assert "default_explanation_mode" in {c["name"] for c in inspect(conn).get_columns("user_profiles")}
+        assert {'user_auth', 'password_resets', 'auth_rate_limits', 'email_verifications'} <= set(inspect(conn).get_table_names())
     engine.dispose()
 
 
