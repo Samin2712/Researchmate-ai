@@ -247,13 +247,13 @@ test('validation, filter, summary, citation, PDF export, graph and deletion (con
   await page
     .getByLabel('Choose PDF file')
     .setInputFiles({ name: 'not-a-pdf.txt', mimeType: 'text/plain', buffer: Buffer.from('text') })
-  await expect(page.getByRole('alert')).toContainText('Choose a PDF')
+  await expect(page.getByRole('listitem', { name: 'not-a-pdf.txt', exact: true }).getByRole('alert')).toContainText('Choose a PDF')
   await page.getByLabel('Choose PDF file').setInputFiles({
     name: 'renamed.pdf',
     mimeType: 'application/pdf',
     buffer: Buffer.from('not pdf'),
   })
-  await expect(page.getByRole('alert')).toContainText('not a valid PDF')
+  await expect(page.getByRole('listitem', { name: 'renamed.pdf', exact: true }).getByRole('alert')).toContainText('not a valid PDF')
   await page.getByRole('textbox', { name: 'Search papers' }).fill('no-match')
   await expect(page.getByRole('heading', { name: 'No papers match your search.' })).toBeVisible()
   await page.getByRole('button', { name: 'Clear filters' }).click()
@@ -460,7 +460,7 @@ test('upload progress, server rejection and retry (controlled API)', async ({ pa
   }, [...pdf])
   await page.locator('.upload-zone').dispatchEvent('drop', { dataTransfer: transfer })
   await transfer.dispose()
-  await expect(page.getByRole('progressbar', { name: 'File upload' })).toBeVisible()
+  await expect(page.getByRole('progressbar', { name: 'Upload paper.pdf', exact: true })).toBeVisible()
   release?.()
   await expect(page.getByRole('alert')).toContainText('Storage temporarily unavailable')
   await page.getByRole('button', { name: 'Retry upload' }).click()

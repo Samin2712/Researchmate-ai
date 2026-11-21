@@ -381,3 +381,7 @@ collection-test-results/
 
 # Isolated source-verification browser artifacts
 evidence-test-results/
+
+# Browser test source for the multiple-file uploader (not uploaded user data).
+!frontend/tests/uploads/
+!frontend/tests/uploads/**
