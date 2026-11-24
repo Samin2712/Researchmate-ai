@@ -1,33 +1,48 @@
-import { Component, type ErrorInfo, type ReactNode } from 'react'
+import { Component, useEffect, useState, type ErrorInfo, type ReactNode } from 'react'
 import { AlertCircle, Check, X } from 'lucide-react'
-import { AnimatePresence, motion } from 'motion/react'
 import { useToasts } from '../../store/toasts'
-export function Toasts() {
+import { useAuth } from '../../store/auth'
+export function Toasts({ workspace = false }: { workspace?: boolean }) {
   const { items, dismiss } = useToasts()
+  const token = useAuth((state) => state.token)
+  const [paused, setPaused] = useState(false)
+  const item = items[0]
+  const active = !!token === workspace
+  useEffect(() => {
+    if (!active || !item || item.kind === 'error' || paused) return
+    const timer = window.setTimeout(() => dismiss(item.id), 8000)
+    return () => window.clearTimeout(timer)
+  }, [active, item, paused, dismiss])
+  if (!active) return null
   return (
     <div className="toast-stack" role="region" aria-label="Notifications">
-      <AnimatePresence>
-        {items.map((item) => (
-          <motion.div
-            className={`toast ${item.kind}`}
-            role={item.kind === 'error' ? 'alert' : 'status'}
-            key={item.id}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
+      {item && (
+        <div
+          className={`toast ${item.kind}`}
+          role={item.kind === 'error' ? 'alert' : 'status'}
+          key={item.id}
+          onMouseEnter={() => setPaused(true)}
+          onMouseLeave={() => setPaused(false)}
+          onFocusCapture={() => setPaused(true)}
+          onBlurCapture={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget)) setPaused(false)
+          }}
+        >
+          {item.kind === 'success' ? <Check size={18} /> : <AlertCircle size={18} />}
+          <span>{item.text}</span>
+          {items.length > 1 && <small>{items.length - 1} more</small>}
+          <button
+            className="icon-button"
+            aria-label="Dismiss notification"
+            onClick={() => {
+              setPaused(false)
+              dismiss(item.id)
+            }}
           >
-            {item.kind === 'success' ? <Check size={18} /> : <AlertCircle size={18} />}
-            <span>{item.text}</span>
-            <button
-              className="icon-button"
-              aria-label="Dismiss notification"
-              onClick={() => dismiss(item.id)}
-            >
-              <X size={16} />
-            </button>
-          </motion.div>
-        ))}
-      </AnimatePresence>
+            <X size={16} />
+          </button>
+        </div>
+      )}
     </div>
   )
 }

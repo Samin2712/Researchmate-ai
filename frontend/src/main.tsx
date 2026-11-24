@@ -6,6 +6,7 @@ import { MotionConfig } from 'motion/react'
 import App from './App'
 import { ErrorBoundary, Toasts } from './components/shared/Feedback'
 import './styles.css'
+import './styles-workspace.css'
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, refetchOnWindowFocus: true, staleTime: 15000 } },
@@ -17,8 +18,8 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <MotionConfig reducedMotion="user" transition={{ duration: 0.18 }}>
-          <RouterProvider router={router} />
           <Toasts />
+          <RouterProvider router={router} />
         </MotionConfig>
       </QueryClientProvider>
     </ErrorBoundary>

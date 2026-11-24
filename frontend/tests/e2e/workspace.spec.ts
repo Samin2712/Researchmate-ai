@@ -146,7 +146,7 @@ async function signIn(page: Page) {
   await page.getByLabel('Email address').fill('alex@example.com')
   await page.getByLabel('Password', { exact: true }).fill('research123')
   await page.getByRole('button', { name: 'Sign in', exact: true }).click()
-  await expect(page.getByRole('heading', { name: 'What will you discover today?' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: /What will you discover today\?|Continue your research/ })).toBeVisible()
 }
 async function navigate(page: Page, label: string) {
   if ((page.viewportSize()?.width || 1280) <= 767) {
@@ -322,7 +322,7 @@ test('keyboard, mobile navigation, reduced motion, and accessibility (controlled
   await page.keyboard.type('research123')
   await page.keyboard.press('Enter')
   await expect(page).toHaveURL(/\/$/)
-  await expect(page.getByRole('heading', { name: 'What will you discover today?' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Continue your research' })).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   )

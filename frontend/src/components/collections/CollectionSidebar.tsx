@@ -23,7 +23,7 @@ export function CollectionSidebar() {
   const invalidate = () => {
     void client.invalidateQueries({ queryKey: ['collections'] })
     void client.invalidateQueries({ queryKey: ['documents'] })
-      void client.invalidateQueries({ queryKey: ['collection-documents'] })
+    void client.invalidateQueries({ queryKey: ['collection-documents'] })
   }
 
   const createCollection = useMutation({
@@ -33,7 +33,11 @@ export function CollectionSidebar() {
       invalidate()
       setCreating(false)
       setNewName('')
-      setParams((previous) => { const next = new URLSearchParams(previous); next.set('collection', String(col.id)); return next })
+      setParams((previous) => {
+        const next = new URLSearchParams(previous)
+        next.set('collection', String(col.id))
+        return next
+      })
     },
     onError: () => toast('Could not create collection.', 'error'),
   })
@@ -69,7 +73,11 @@ export function CollectionSidebar() {
       p.delete('collection')
       setParams(p)
     } else {
-      setParams((previous) => { const next = new URLSearchParams(previous); next.set('collection', String(id)); return next })
+      setParams((previous) => {
+        const next = new URLSearchParams(previous)
+        next.set('collection', String(id))
+        return next
+      })
     }
     setMenuOpen(null)
   }
@@ -91,7 +99,14 @@ export function CollectionSidebar() {
 
   return (
     <nav className="collection-sidebar" aria-label="Collections">
-      {collectionsQuery.isError && <p role="alert">Could not load collections. <button className="text-button" onClick={() => void collectionsQuery.refetch()}>Retry</button></p>}
+      {collectionsQuery.isError && (
+        <p role="alert">
+          Could not load collections.{' '}
+          <button className="text-button" onClick={() => void collectionsQuery.refetch()}>
+            Retry
+          </button>
+        </p>
+      )}
       {/* All papers */}
       <button
         type="button"
@@ -140,6 +155,7 @@ export function CollectionSidebar() {
               type="button"
               className={`collection-nav-item ${activeId === col.id ? 'active' : ''}`}
               onClick={() => selectCollection(col.id)}
+              title={col.name}
               aria-current={activeId === col.id ? 'page' : undefined}
             >
               <Folder size={16} />
@@ -160,23 +176,14 @@ export function CollectionSidebar() {
                 <MoreHorizontal size={15} />
               </button>
               {menuOpen === col.id && (
-                <ul className="collection-context-menu" role="menu">
+                <ul className="collection-context-menu" aria-label={`Actions for ${col.name}`}>
                   <li>
-                    <button
-                      type="button"
-                      role="menuitem"
-                      onClick={() => startRename(col)}
-                    >
+                    <button type="button" onClick={() => startRename(col)}>
                       Rename
                     </button>
                   </li>
                   <li>
-                    <button
-                      type="button"
-                      role="menuitem"
-                      className="danger"
-                      onClick={() => confirmDelete(col)}
-                    >
+                    <button type="button" className="danger" onClick={() => confirmDelete(col)}>
                       Delete
                     </button>
                   </li>
@@ -226,11 +233,7 @@ export function CollectionSidebar() {
           </div>
         </form>
       ) : (
-        <button
-          type="button"
-          className="collection-new-btn"
-          onClick={() => setCreating(true)}
-        >
+        <button type="button" className="collection-new-btn" onClick={() => setCreating(true)}>
           <Plus size={15} />
           New collection
         </button>

@@ -35,7 +35,7 @@ const ANALYSIS_KINDS: {
   {
     kind: 'comparison',
     icon: <GitCompare size={32} />,
-    title: 'Comparison Matrix',
+    title: 'Compare papers',
     description:
       'Compare 2–5 papers side-by-side across research questions, methods, populations, findings, and limitations.',
     action: 'Start comparison',
@@ -51,7 +51,7 @@ const ANALYSIS_KINDS: {
   {
     kind: 'gap_analysis',
     icon: <Telescope size={32} />,
-    title: 'Research Gap Finder',
+    title: 'Find research gaps',
     description:
       'Identify candidate research gaps, proposed research questions, and feasible student investigation projects from your selected papers.',
     action: 'Find gaps',
@@ -130,17 +130,15 @@ export default function Analysis() {
         </button>
         <div>
           <h1>Research Analysis</h1>
-          <p className="subtitle">Compare papers, generate reviews, find gaps, explore disagreements</p>
+          <p className="subtitle">
+            Compare papers, generate reviews, find gaps, explore disagreements
+          </p>
         </div>
       </header>
 
       <div className="analysis-grid analysis-grid--4">
         {ANALYSIS_KINDS.map(({ kind, icon, title, description, action }) => (
-          <button
-            key={kind}
-            className="analysis-card"
-            onClick={() => handleSelectKind(kind)}
-          >
+          <button key={kind} className="analysis-card" onClick={() => handleSelectKind(kind)}>
             <div className="analysis-card-icon">{icon}</div>
             <h2>{title}</h2>
             <p>{description}</p>
@@ -152,9 +150,7 @@ export default function Analysis() {
       <section className="analysis-history-section">
         <h2 className="section-title">Recent Analyses</h2>
         <AnalysisHistory
-          onSelectRun={(run) =>
-            setSearchParams({ mode: run.kind, runId: String(run.id) })
-          }
+          onSelectRun={(run) => setSearchParams({ mode: run.kind, runId: String(run.id) })}
         />
       </section>
     </div>

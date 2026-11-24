@@ -6,9 +6,30 @@ const stamp = '2026-11-15T00:00:00'
 const token = `e30.${Buffer.from(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3600 })).toString('base64url')}.sig`
 
 const papers = [
-  { id: 1, user_id: 1, title: 'Clinical Trial on Cognitive Accuracy', authors: 'Dr. Alice Smith', status: 'completed', created_at: stamp },
-  { id: 2, user_id: 1, title: 'Server Latency and Caching Benchmark', authors: 'Bob Jones', status: 'completed', created_at: stamp },
-  { id: 3, user_id: 1, title: 'Pediatric Language Study', authors: 'Carol Davis', status: 'completed', created_at: stamp },
+  {
+    id: 1,
+    user_id: 1,
+    title: 'Clinical Trial on Cognitive Accuracy',
+    authors: 'Dr. Alice Smith',
+    status: 'completed',
+    created_at: stamp,
+  },
+  {
+    id: 2,
+    user_id: 1,
+    title: 'Server Latency and Caching Benchmark',
+    authors: 'Bob Jones',
+    status: 'completed',
+    created_at: stamp,
+  },
+  {
+    id: 3,
+    user_id: 1,
+    title: 'Pediatric Language Study',
+    authors: 'Carol Davis',
+    status: 'completed',
+    created_at: stamp,
+  },
 ]
 
 const ref1 = {
@@ -58,7 +79,13 @@ test('gap analysis and disagreement explorer end-to-end lifecycle', async ({ pag
       route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) })
 
     if (path === '/auth/me') {
-      return json({ id: 1, email: 'researcher@example.com', full_name: 'Lead Researcher', is_active: true, created_at: stamp })
+      return json({
+        id: 1,
+        email: 'researcher@example.com',
+        full_name: 'Lead Researcher',
+        is_active: true,
+        created_at: stamp,
+      })
     }
     if (path === '/documents') return json({ documents: papers, total: 3 })
     if (path === '/collections' || path === '/tags' || path === '/chat/sessions') return json([])
@@ -80,10 +107,13 @@ test('gap analysis and disagreement explorer end-to-end lifecycle', async ({ pag
               gap_category: 'methodology',
               scope: 'Clinical trial environments',
               gap_source: 'author_stated',
-              evidence_basis: 'Authors explicitly identify limitation to a single testing facility.',
-              rationale: 'Replicating findings across diverse centers is needed before broad adoption.',
+              evidence_basis:
+                'Authors explicitly identify limitation to a single testing facility.',
+              rationale:
+                'Replicating findings across diverse centers is needed before broad adoption.',
               uncertainty: 'Single-center results cannot be assumed generalizable.',
-              proposed_research_question: 'Does the cognitive intervention replicate in community healthcare settings?',
+              proposed_research_question:
+                'Does the cognitive intervention replicate in community healthcare settings?',
               suggested_search_terms: ['multi-center replication', 'community healthcare'],
               coverage_note: 'Not addressed in these selected papers',
               supporting_quotes: [ref1_lim],
@@ -97,7 +127,8 @@ test('gap analysis and disagreement explorer end-to-end lifecycle', async ({ pag
                   'Calculate standardized mean difference in accuracy',
                   'Compare observed effect to trial report bounds',
                 ],
-                success_criteria: 'Completed analysis report and reproducible script within 1 semester',
+                success_criteria:
+                  'Completed analysis report and reproducible script within 1 semester',
                 time_budget: '1 semester',
                 resource_budget: 'Standard student laptop',
               },
@@ -111,12 +142,14 @@ test('gap analysis and disagreement explorer end-to-end lifecycle', async ({ pag
               evidence_basis: 'Trial evaluated adult cohorts only; pediatric data not collected.',
               rationale: 'Cognitive developmental differences may significantly alter retention.',
               uncertainty: 'Pediatric papers were not included in the analyzed evidence.',
-              proposed_research_question: 'What is the cognitive decay curve in pediatric participants?',
+              proposed_research_question:
+                'What is the cognitive decay curve in pediatric participants?',
               suggested_search_terms: ['pediatric retention', 'developmental decay'],
               coverage_note: 'Not found in the analyzed evidence.',
               supporting_quotes: [ref1],
               feasible_project: {
-                bounded_question: 'How do developmental decay equations predict pediatric retention?',
+                bounded_question:
+                  'How do developmental decay equations predict pediatric retention?',
                 suggested_method: 'Computational parameter sweep using literature models',
                 data_sources: 'Open Science Framework benchmark archives',
                 skills_required: 'Basic scientific computing',
@@ -135,14 +168,17 @@ test('gap analysis and disagreement explorer end-to-end lifecycle', async ({ pag
       } else if (data.kind === 'disagreement') {
         result = {
           themes: ['Latency vs Accuracy Trade-off', 'Long-term Adverse Effects'],
-          warnings: ['Different populations or measurement contexts are not automatic contradictions.'],
+          warnings: [
+            'Different populations or measurement contexts are not automatic contradictions.',
+          ],
           coverage: { 1: 'included', 2: 'included' },
           relationships: [
             {
               id: 'rel_1',
               relationship_type: 'different_context',
               outcome_theme: 'Latency vs Accuracy Trade-off',
-              rationale: 'Study 1 optimized accuracy in adult clinical trials; Study 2 benchmarked network latency on servers.',
+              rationale:
+                'Study 1 optimized accuracy in adult clinical trials; Study 2 benchmarked network latency on servers.',
               distinguishing_factors: 'Distinct populations and incompatible measurement metrics',
               left: {
                 document_id: 1,
@@ -212,7 +248,12 @@ test('gap analysis and disagreement explorer end-to-end lifecycle', async ({ pag
       const runId = Number(runMatch[1])
       const subpath = runMatch[2]
 
-      if (subpath === '/gaps') return json(Object.keys(candidateReviewState).length ? [{ candidate_id: 'gap_2', ...candidateReviewState }] : [])
+      if (subpath === '/gaps')
+        return json(
+          Object.keys(candidateReviewState).length
+            ? [{ candidate_id: 'gap_2', ...candidateReviewState }]
+            : [],
+        )
 
       if (subpath.startsWith('/gaps/') && subpath.endsWith('/brief')) {
         const brief = {
@@ -222,8 +263,10 @@ test('gap analysis and disagreement explorer end-to-end lifecycle', async ({ pag
           candidate_id: 'gap_1',
           title: 'Multi-center clinical replication required',
           research_question: 'Can public clinic EHR records replicate the 5% accuracy gain?',
-          method: 'Secondary cohort analysis', data_sources: 'Requires verification',
-          steps: ['Inspect available data'], success_criteria: 'Reproducible report',
+          method: 'Secondary cohort analysis',
+          data_sources: 'Requires verification',
+          steps: ['Inspect available data'],
+          success_criteria: 'Reproducible report',
           linked_source_ids: ['doc1_chunk1'],
           ...req.postDataJSON(),
           created_at: stamp,
@@ -276,16 +319,36 @@ test('gap analysis and disagreement explorer end-to-end lifecycle', async ({ pag
   await expect(page.getByText('Pediatric retention curve unstudied')).toBeVisible()
 
   // Verify evidence panel opens with exact quote
-  await page.getByRole('button', { name: /View evidence for Multi-center clinical replication required/ }).click()
+  await page
+    .getByRole('button', { name: /View evidence for Multi-center clinical replication required/ })
+    .click()
   await expect(page.getByRole('dialog', { name: /Evidence for: Multi-center/ })).toBeVisible()
   await expect(page.getByText('Limitation: single site trial.')).toBeVisible()
   await page.getByRole('button', { name: 'Close evidence panel' }).click()
   await expect(page.getByRole('dialog', { name: /Evidence for: Multi-center/ })).toBeHidden()
 
   // Expand feasible student project accordion
-  const projectToggle = page.getByRole('button', { name: 'Feasible student investigation' }).first()
+  const gapCard = page.getByRole('article', { name: 'Multi-center clinical replication required' })
+  await expect(
+    gapCard.getByText('Single-center results cannot be assumed generalizable.', { exact: false }),
+  ).toBeVisible()
+  await expect(
+    gapCard.getByText('Authors explicitly identify limitation to a single testing facility.'),
+  ).toBeHidden()
+  const explanation = gapCard.locator('summary', { hasText: 'Supporting explanation' })
+  await explanation.focus()
+  await page.keyboard.press('Enter')
+  await expect(
+    gapCard.getByText('Authors explicitly identify limitation to a single testing facility.'),
+  ).toBeVisible()
+  await page.keyboard.press('Enter')
+  const projectToggle = page
+    .locator('summary', { hasText: 'Feasible student investigation' })
+    .first()
   await projectToggle.click()
-  await expect(page.getByText('Can public clinic EHR records replicate the 5% accuracy gain?')).toBeVisible()
+  await expect(
+    page.getByText('Can public clinic EHR records replicate the 5% accuracy gain?'),
+  ).toBeVisible()
   await expect(page.getByText('Extract matched cohort from open dataset')).toBeVisible()
 
   // Save as project brief dialog flow
@@ -297,7 +360,9 @@ test('gap analysis and disagreement explorer end-to-end lifecycle', async ({ pag
 
   const savedBriefs = page.getByRole('region', { name: 'Saved project briefs' })
   await savedBriefs.getByText('Multi-center clinical replication required', { exact: true }).click()
-  await expect(savedBriefs.getByText('Assumptions: Cohort age distributions match trial criteria')).toBeVisible()
+  await expect(
+    savedBriefs.getByText('Assumptions: Cohort age distributions match trial criteria'),
+  ).toBeVisible()
   const briefDownload = page.waitForEvent('download')
   await savedBriefs.getByRole('button', { name: 'Export brief' }).click()
   const briefMd = await readFile((await (await briefDownload).path())!, 'utf8')
@@ -305,7 +370,11 @@ test('gap analysis and disagreement explorer end-to-end lifecycle', async ({ pag
   expect(briefMd).toContain('[doc1_chunk1]')
   await savedBriefs.getByText('Multi-center clinical replication required', { exact: true }).click()
 
-  await page.getByRole('article').filter({ hasText: 'Pediatric retention curve unstudied' }).getByRole('button', { name: 'Dismiss', exact: true }).click()
+  await page
+    .getByRole('article')
+    .filter({ hasText: 'Pediatric retention curve unstudied' })
+    .getByRole('button', { name: 'Dismiss', exact: true })
+    .click()
   await page.reload()
   await expect(page.getByText('Pediatric retention curve unstudied')).toBeHidden()
   await page.getByLabel('Show dismissed').check()
@@ -320,20 +389,33 @@ test('gap analysis and disagreement explorer end-to-end lifecycle', async ({ pag
   expect(gapMd).toContain('Feasible student investigation')
 
   // Accessibility check on gap workspace
-  expect((await new AxeBuilder({ page }).include('.gap-workspace').analyze()).violations).toEqual([])
+  expect((await new AxeBuilder({ page }).include('.gap-workspace').analyze()).violations).toEqual(
+    [],
+  )
 
   // Responsive layout check
   for (const width of [390, 768, 1440]) {
     await page.setViewportSize({ width, height: 900 })
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+    expect(
+      (
+        await new AxeBuilder({ page })
+          .include('.gap-workspace')
+          .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
+          .analyze()
+      ).violations,
+    ).toEqual([])
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+    ).toBe(true)
     await page.screenshot({ path: info.outputPath(`gaps-${width}.png`), fullPage: true })
-    await page.screenshot({ path: `../docs/features/screenshots/gaps-${width}.png`, fullPage: true })
   }
 
   // ─── 2. TEST DISAGREEMENT EXPLORER WORKSPACE ─────────────────────────────────
   await page.getByRole('button', { name: 'Back', exact: true }).click()
   await page.getByRole('button', { name: /Explore relationships/i }).click()
-  await expect(page.getByRole('heading', { name: 'Agreement & Disagreement Explorer' })).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: 'Agreement & Disagreement Explorer' }),
+  ).toBeVisible()
 
   // Select documents
   await page.getByRole('button', { name: /Clinical Trial on Cognitive Accuracy/ }).click()
@@ -343,16 +425,29 @@ test('gap analysis and disagreement explorer end-to-end lifecycle', async ({ pag
 
   // Assert relationships rendered
   await expect(page.getByRole('heading', { name: 'Latency vs Accuracy Trade-off' })).toBeVisible()
-  await expect(page.locator('.rel-type-badge', { hasText: 'Different context' }).first()).toBeVisible()
+  await expect(
+    page.locator('.rel-type-badge', { hasText: 'Different context' }).first(),
+  ).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Long-term Adverse Effects' })).toBeVisible()
-  await expect(page.locator('.rel-type-badge', { hasText: 'Insufficient evidence' }).first()).toBeVisible()
+  await expect(
+    page.locator('.rel-type-badge', { hasText: 'Insufficient evidence' }).first(),
+  ).toBeVisible()
 
   // Inspect side-by-side study context
-  await expect(page.getByText('Accuracy increased by 5 percentage points.')).toBeVisible()
-  await expect(page.getByText('Latency decreased by 5 ms.')).toBeVisible()
+  await expect(
+    page.getByText('Evidence is incomplete: at least one study has no direct quotes.'),
+  ).toBeVisible()
+  await page
+    .locator('summary', { hasText: 'Supporting explanation and study claims' })
+    .first()
+    .click()
+  await expect(
+    page.locator('.rel-claim', { hasText: 'Accuracy increased by 5 percentage points.' }),
+  ).toBeVisible()
+  await expect(page.locator('.rel-claim', { hasText: 'Latency decreased by 5 ms.' })).toBeVisible()
 
   // Toggle evidence drawer
-  const evidenceToggle = page.getByRole('button', { name: /Show source evidence/ }).first()
+  const evidenceToggle = page.locator('summary', { hasText: 'Show source evidence' }).first()
   await evidenceToggle.click()
   await expect(page.getByText('Accuracy increased by 5 percentage points.').nth(1)).toBeVisible()
 
@@ -374,13 +469,24 @@ test('gap analysis and disagreement explorer end-to-end lifecycle', async ({ pag
   expect(disMd).toContain('different_context')
 
   // Accessibility check on disagreement workspace
-  expect((await new AxeBuilder({ page }).include('.gap-workspace').analyze()).violations).toEqual([])
+  expect((await new AxeBuilder({ page }).include('.gap-workspace').analyze()).violations).toEqual(
+    [],
+  )
 
   // Responsive layout check
   for (const width of [390, 768, 1440]) {
     await page.setViewportSize({ width, height: 900 })
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+    expect(
+      (
+        await new AxeBuilder({ page })
+          .include('.gap-workspace')
+          .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
+          .analyze()
+      ).violations,
+    ).toEqual([])
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+    ).toBe(true)
     await page.screenshot({ path: info.outputPath(`disagreement-${width}.png`), fullPage: true })
-    await page.screenshot({ path: `../docs/features/screenshots/disagreement-${width}.png`, fullPage: true })
   }
 })

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { resolvePaperSelection } from '../collections/selection'
-import { BookOpen, Search, SlidersHorizontal, Tag as TagIcon } from 'lucide-react'
+import { BookOpen, Search, SlidersHorizontal, Tag as TagIcon, LayoutGrid, List } from 'lucide-react'
 import type { Document } from '../../types'
 import type { DocumentWithCollections } from '../../types/collections'
 import { DocumentCard } from './DocumentCard'
@@ -22,14 +22,18 @@ export function DocumentList({
   const search = params.get('q') || ''
   const status = params.get('status') || 'all'
   const sort = params.get('sort') || 'newest'
+  const view = params.get('view') === 'list' ? 'list' : 'cards'
   const tagFilter: number | 'all' = Number(params.get('tag')) || 'all'
   function setFilter(key: string, value: string) {
-    setParams((previous) => {
-      const next = new URLSearchParams(previous)
-      if (!value || value === 'all' || (key === 'sort' && value === 'newest')) next.delete(key)
-      else next.set(key, value)
-      return next
-    }, { replace: true })
+    setParams(
+      (previous) => {
+        const next = new URLSearchParams(previous)
+        if (!value || value === 'all' || (key === 'sort' && value === 'newest')) next.delete(key)
+        else next.set(key, value)
+        return next
+      },
+      { replace: true },
+    )
   }
   const setSearch = (value: string) => setFilter('q', value)
   const setStatus = (value: string) => setFilter('status', value)
@@ -145,10 +149,28 @@ export function DocumentList({
         </div>
       </div>
 
-      <p className="results-count" role="status">
-        {filtered.length} {filtered.length === 1 ? 'paper' : 'papers'}
-        {search ? ` matching "${search}"` : ' in your library'}
-      </p>
+      <div className="library-view-heading">
+        <p className="results-count" role="status">
+          {filtered.length} {filtered.length === 1 ? 'paper' : 'papers'}
+          {search ? ` matching "${search}"` : ' in your library'}
+        </p>
+        <div className="view-switch" role="group" aria-label="Paper view">
+          <button
+            className="button secondary small"
+            aria-pressed={view === 'cards'}
+            onClick={() => setFilter('view', '')}
+          >
+            <LayoutGrid size={16} /> Cards
+          </button>
+          <button
+            className="button secondary small"
+            aria-pressed={view === 'list'}
+            onClick={() => setFilter('view', 'list')}
+          >
+            <List size={16} /> List
+          </button>
+        </div>
+      </div>
 
       {filtered.length ? (
         <>
@@ -167,7 +189,7 @@ export function DocumentList({
               <span>{allSelected ? 'Deselect all' : 'Select all'}</span>
             </label>
           </div>
-          <div className="document-grid">
+          <div className={view === 'list' ? 'document-list' : 'document-grid'}>
             {filtered.map((document) => (
               <DocumentCard
                 key={document.id}
@@ -197,11 +219,14 @@ export function DocumentList({
             <button
               className="button secondary mt-4"
               onClick={() => {
-                setParams((previous) => {
-                  const next = new URLSearchParams(previous)
-                  for (const key of ['q', 'status', 'tag']) next.delete(key)
-                  return next
-                }, { replace: true })
+                setParams(
+                  (previous) => {
+                    const next = new URLSearchParams(previous)
+                    for (const key of ['q', 'status', 'tag']) next.delete(key)
+                    return next
+                  },
+                  { replace: true },
+                )
               }}
             >
               Clear filters

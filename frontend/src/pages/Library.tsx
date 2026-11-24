@@ -1,9 +1,10 @@
 import { useSearchParams } from 'react-router-dom'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { PanelLeft } from 'lucide-react'
 import { UploadZone } from '../components/documents/UploadZone'
 import { DocumentList } from '../components/documents/DocumentList'
 import { CollectionSidebar } from '../components/collections/CollectionSidebar'
-import { useDocuments, useCollectionDocuments } from '../services/queries'
+import { useDocuments, useCollectionDocuments, useCollections } from '../services/queries'
 import { ErrorState, Skeleton } from '../components/shared/Feedback'
 import { errorMessage } from '../services/api'
 import type { DocumentWithCollections } from '../types/collections'
@@ -11,6 +12,7 @@ import type { DocumentWithCollections } from '../types/collections'
 export default function Library() {
   const [params] = useSearchParams()
   const upload = useRef<HTMLDivElement>(null)
+  const [collectionsOpen, setCollectionsOpen] = useState(() => window.innerWidth > 768)
 
   const selected = Number(params.get('document')) || undefined
   const activeCollection = Number(params.get('collection')) || null
@@ -21,6 +23,10 @@ export default function Library() {
 
   const allDocuments = useDocuments()
   const collectionDocuments = useCollectionDocuments(activeCollection)
+  const collections = useCollections()
+  const collectionName = collections.data?.find(
+    (collection) => collection.id === activeCollection,
+  )?.name
 
   const isActive = activeCollection !== null
   const query = isActive ? collectionDocuments : allDocuments
@@ -30,8 +36,10 @@ export default function Library() {
     : ((allDocuments.data?.documents as DocumentWithCollections[]) ?? [])
 
   return (
-    <div className="library-layout">
-      <CollectionSidebar />
+    <div className={`library-layout ${collectionsOpen ? '' : 'collections-collapsed'}`}>
+      <div id="library-collections" hidden={!collectionsOpen}>
+        <CollectionSidebar />
+      </div>
       <div className="library-main">
         <div className="page">
           <header className="page-heading">
@@ -40,7 +48,14 @@ export default function Library() {
               <p>A home for the research you're building on.</p>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span className="subtle-tag">PDF workspace</span>
+              <button
+                className="button secondary small"
+                aria-expanded={collectionsOpen}
+                aria-controls="library-collections"
+                onClick={() => setCollectionsOpen(!collectionsOpen)}
+              >
+                <PanelLeft size={17} /> {collectionsOpen ? 'Hide collections' : 'Show collections'}
+              </button>
               <button
                 className="text-button"
                 onClick={() => void query.refetch()}
@@ -56,16 +71,13 @@ export default function Library() {
           </div>
 
           <div className="section-heading">
-            <h2>{isActive ? 'Collection papers' : 'All papers'}</h2>
+            <h2>{isActive ? collectionName || 'Collection papers' : 'All papers'}</h2>
           </div>
 
           {query.isPending ? (
             <Skeleton />
           ) : query.isError ? (
-            <ErrorState
-              message={errorMessage(query.error)}
-              retry={() => void query.refetch()}
-            />
+            <ErrorState message={errorMessage(query.error)} retry={() => void query.refetch()} />
           ) : (
             <DocumentList
               key={activeCollection ?? 'all'}

@@ -4,6 +4,7 @@ import { motion } from 'motion/react'
 import { Sidebar } from './Sidebar'
 import { Navbar } from './Navbar'
 import { Modal } from './Modal'
+import { Toasts } from './Feedback'
 export default function Layout() {
   const [menu, setMenu] = useState(false)
   const { pathname } = useLocation()
@@ -20,6 +21,7 @@ export default function Layout() {
       </aside>
       <div className="workspace-main">
         <Navbar onMenu={() => setMenu(true)} />
+        <Toasts workspace />
         <main id="main-content" tabIndex={-1}>
           <motion.div
             key={pathname}

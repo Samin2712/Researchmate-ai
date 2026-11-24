@@ -6,6 +6,8 @@ import {
   Network,
   Plus,
   Sparkles,
+  GitCompare,
+  Telescope,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useDocuments, useSessions, useUser } from '../services/queries'
@@ -17,6 +19,12 @@ export default function Dashboard() {
   const documents = useDocuments()
   const sessions = useSessions()
   const { data: user } = useUser()
+  const returning = !!documents.data?.total || !!sessions.data?.length
+  const recentSessions = [...(sessions.data ?? [])].sort(
+    (a, b) => Date.parse(b.updated_at || b.created_at) - Date.parse(a.updated_at || a.created_at),
+  )
+  const attention =
+    documents.data?.documents.filter((document) => document.status !== 'completed') ?? []
   const ready = documents.data?.documents.filter(
     (document) => document.status === 'completed',
   ).length
@@ -27,7 +35,7 @@ export default function Dashboard() {
           <p className="greeting">
             Welcome{user?.full_name ? `, ${user.full_name.split(' ')[0]}` : ' to your workspace'}
           </p>
-          <h1>What will you discover today?</h1>
+          <h1>{returning ? 'Continue your research' : 'What will you discover today?'}</h1>
           <p>Your papers, questions, and ideas. All connected.</p>
         </div>
         <span className="date-label">
@@ -38,51 +46,137 @@ export default function Dashboard() {
           })}
         </span>
       </header>
-      <section className="workspace-banner">
-        <div className="banner-copy">
-          <span className="banner-mark">
-            <Sparkles size={20} /> A little more clarity
-          </span>
-          <h2>
-            Let your papers
-            <br />
-            talk to each other.
-          </h2>
-          <p>
-            Ask a question across your library. Follow the sources. Find the connection you hadn’t
-            seen.
-          </p>
-          <Link to="/chat" className="button banner-button">
-            Start a research chat
-            <ArrowRight size={17} />
-          </Link>
-        </div>
-        <div className="banner-diagram" aria-hidden="true">
-          <svg viewBox="0 0 360 230">
-            <path d="M65 60L180 115L285 45M180 115L290 190M180 115L60 190" />
-            <circle cx="180" cy="115" r="48" />
-            <circle cx="65" cy="60" r="24" />
-            <circle cx="285" cy="45" r="24" />
-            <circle cx="290" cy="190" r="24" />
-            <circle cx="60" cy="190" r="24" />
-          </svg>
-          <span className="diagram-center">
-            <MessagesSquare size={31} />
-          </span>
-          <span className="diagram-paper dp1">
-            <BookOpen size={19} />
-          </span>
-          <span className="diagram-paper dp2">
-            <BookOpen size={19} />
-          </span>
-          <span className="diagram-paper dp3">
-            <FileCheck2 size={19} />
-          </span>
-          <span className="diagram-paper dp4">
-            <Sparkles size={19} />
-          </span>
-        </div>
-      </section>
+      {documents.isSuccess && sessions.isSuccess && !returning && (
+        <section className="workspace-banner">
+          <div className="banner-copy">
+            <span className="banner-mark">
+              <Sparkles size={20} /> A little more clarity
+            </span>
+            <h2>
+              Let your papers
+              <br />
+              talk to each other.
+            </h2>
+            <p>
+              Ask a question across your library. Follow the sources. Find the connection you hadn’t
+              seen.
+            </p>
+            <Link to="/chat" className="button banner-button">
+              Start a research chat
+              <ArrowRight size={17} />
+            </Link>
+          </div>
+          <div className="banner-diagram" aria-hidden="true">
+            <svg viewBox="0 0 360 230">
+              <path d="M65 60L180 115L285 45M180 115L290 190M180 115L60 190" />
+              <circle cx="180" cy="115" r="48" />
+              <circle cx="65" cy="60" r="24" />
+              <circle cx="285" cy="45" r="24" />
+              <circle cx="290" cy="190" r="24" />
+              <circle cx="60" cy="190" r="24" />
+            </svg>
+            <span className="diagram-center">
+              <MessagesSquare size={31} />
+            </span>
+            <span className="diagram-paper dp1">
+              <BookOpen size={19} />
+            </span>
+            <span className="diagram-paper dp2">
+              <BookOpen size={19} />
+            </span>
+            <span className="diagram-paper dp3">
+              <FileCheck2 size={19} />
+            </span>
+            <span className="diagram-paper dp4">
+              <Sparkles size={19} />
+            </span>
+          </div>
+        </section>
+      )}
+      {returning && (
+        <section className="resume-research" aria-label="Continue your research">
+          <div>
+            <h2>Recent conversations</h2>
+            {sessions.isPending ? (
+              <Skeleton rows={1} />
+            ) : sessions.isError ? (
+              <ErrorState
+                message={errorMessage(sessions.error)}
+                retry={() => void sessions.refetch()}
+              />
+            ) : recentSessions.length ? (
+              recentSessions.slice(0, 3).map((session) => (
+                <Link className="resume-link" key={session.id} to={`/chat?session=${session.id}`}>
+                  <MessagesSquare size={18} />
+                  <span>{session.title}</span>
+                  <ArrowRight size={16} />
+                </Link>
+              ))
+            ) : (
+              <Link className="resume-link" to="/chat">
+                <MessagesSquare size={18} />
+                Start a conversation about your papers
+                <ArrowRight size={16} />
+              </Link>
+            )}
+          </div>
+          <div>
+            <h2>Papers needing attention</h2>
+            {documents.isPending ? (
+              <Skeleton rows={1} />
+            ) : documents.isError ? (
+              <ErrorState
+                message={errorMessage(documents.error)}
+                retry={() => void documents.refetch()}
+              />
+            ) : attention.length ? (
+              attention.slice(0, 3).map((document) => (
+                <Link
+                  className="resume-link"
+                  key={document.id}
+                  to={`/library?document=${document.id}`}
+                >
+                  <FileCheck2 size={18} />
+                  <span>
+                    {document.title}
+                    <small>
+                      {document.status === 'failed'
+                        ? 'Processing failed · Review and retry'
+                        : 'Processing · Check progress'}
+                    </small>
+                  </span>
+                  <ArrowRight size={16} />
+                </Link>
+              ))
+            ) : (
+              <p className="muted">Your papers are ready to explore.</p>
+            )}
+            {attention.length > 3 && (
+              <Link className="text-link" to="/library">
+                View all {attention.length} papers needing attention
+              </Link>
+            )}
+          </div>
+        </section>
+      )}
+      <nav className="research-shortcuts" aria-label="Research tools">
+        <Link className="explore-link" to="/analysis?mode=comparison">
+          <GitCompare size={23} />
+          <div>
+            <h2>Compare papers</h2>
+            <p>Compare methods, findings, and evidence.</p>
+          </div>
+          <ArrowRight size={17} />
+        </Link>
+        <Link className="explore-link" to="/analysis?mode=gap_analysis">
+          <Telescope size={23} />
+          <div>
+            <h2>Find research gaps</h2>
+            <p>Explore open questions in selected papers.</p>
+          </div>
+          <ArrowRight size={17} />
+        </Link>
+      </nav>
       <section className="stats-grid" aria-label="Workspace statistics">
         {[
           { icon: BookOpen, label: 'Papers in your library', value: documents.data?.total },
@@ -146,29 +240,31 @@ export default function Dashboard() {
             </div>
             <ArrowRight size={17} />
           </Link>
-          <div className="recent-sessions">
-            <h3>Recent conversations</h3>
-            {sessions.isPending ? (
-              <Skeleton rows={1} />
-            ) : sessions.isError ? (
-              <ErrorState
-                message={errorMessage(sessions.error)}
-                retry={() => void sessions.refetch()}
-              />
-            ) : sessions.data.length ? (
-              sessions.data.slice(0, 4).map((session) => (
-                <Link key={session.id} to={`/chat?session=${session.id}`}>
-                  <MessagesSquare size={16} />
-                  <span>{session.title}</span>
-                  <ArrowRight size={14} />
-                </Link>
-              ))
-            ) : (
-              <p className="muted">
-                Your conversations will appear here. Start with a question about your papers.
-              </p>
-            )}
-          </div>
+          {!returning && (
+            <div className="recent-sessions">
+              <h3>Recent conversations</h3>
+              {sessions.isPending ? (
+                <Skeleton rows={1} />
+              ) : sessions.isError ? (
+                <ErrorState
+                  message={errorMessage(sessions.error)}
+                  retry={() => void sessions.refetch()}
+                />
+              ) : sessions.data.length ? (
+                sessions.data.slice(0, 4).map((session) => (
+                  <Link key={session.id} to={`/chat?session=${session.id}`}>
+                    <MessagesSquare size={16} />
+                    <span>{session.title}</span>
+                    <ArrowRight size={14} />
+                  </Link>
+                ))
+              ) : (
+                <p className="muted">
+                  Your conversations will appear here. Start with a question about your papers.
+                </p>
+              )}
+            </div>
+          )}
           <div className="research-tip">
             <QuoteIcon />
             <h3>A good question opens doors.</h3>
