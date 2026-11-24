@@ -222,6 +222,16 @@ select {
   padding: 9px 30px 9px 10px;
   font-size: 13px;
 }
+@media (max-width: 640px) {
+  .ai-provider-settings .setting-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+  .ai-provider-settings select {
+    width: 100%;
+  }
+}
 input[type='checkbox'] {
   width: 21px;
   height: 21px;

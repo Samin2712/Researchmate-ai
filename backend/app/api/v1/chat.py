@@ -118,6 +118,12 @@ async def ask_question(
 
     Retrieves relevant context from documents and generates answer using LLM
     """
+    from app.services.ai_credentials import resolve_llm
+    from app.services.llm_service import llm_service
+    from app.services.rag.engine import RAGEngine
+    request_llm = await resolve_llm(db, current_user.id)
+    request_rag = rag_engine if request_llm is llm_service else RAGEngine(request_llm)
+
     try:
         # Create or get session
         if chat_request.session_id:
@@ -175,7 +181,7 @@ async def ask_question(
         effective_mode = chat_request.explanation_mode or current_user.default_explanation_mode or "standard"
         logger.info(f"🤖 Processing question ({effective_mode}): {chat_request.message[:100]}")
 
-        rag_response = await rag_engine.answer_question(
+        rag_response = await request_rag.answer_question(
             question=chat_request.message,
             user_id=str(current_user.id),
             document_ids=chat_request.document_ids,
@@ -183,7 +189,9 @@ async def ask_question(
             explanation_mode=effective_mode
         )
         if rag_response.get('error'):
-            raise HTTPException(status_code=502, detail='The AI provider could not answer. Check provider connectivity and try again.')
+            detail = (rag_response['error'] if request_llm is not llm_service else
+                      'The AI provider could not answer. Check provider connectivity and try again.')
+            raise HTTPException(status_code=502, detail=detail)
 
         # Save assistant message
         assistant_message = ChatMessage(
@@ -231,6 +239,12 @@ async def stream_answer(
 
     Provides real-time streaming of the generated answer
     """
+    from app.services.ai_credentials import resolve_llm
+    from app.services.llm_service import llm_service
+    from app.services.rag.engine import RAGEngine
+    request_llm = await resolve_llm(db, current_user.id)
+    request_rag = rag_engine if request_llm is llm_service else RAGEngine(request_llm)
+
     async def generate():
         try:
             # Create or get session
@@ -282,7 +296,7 @@ async def stream_answer(
                 if history[i].role == MessageRole.USER and history[i + 1].role == MessageRole.ASSISTANT
             ]
 
-            async for chunk in rag_engine.stream_answer(
+            async for chunk in request_rag.stream_answer(
                 question=chat_request.message,
                 user_id=str(current_user.id),
                 document_ids=chat_request.document_ids,

@@ -31,3 +31,6 @@ pytest>=8,<9
 pytest-asyncio>=0.24,<0.25
 
 alembic>=1.14,<2
+
+# Authenticated encryption for personal AI credentials.
+cryptography>=43,<47

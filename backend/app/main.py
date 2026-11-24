@@ -14,6 +14,7 @@ import os
 from app.core.config import settings
 from app.api.v1 import auth, documents, chat, evidence, analysis
 from app.api.v1.account_security import router as account_security_router
+from app.api.v1.ai_providers import router as ai_providers_router
 from app.api.v1.collections import (
     router as collections_router,
     tags_router,
@@ -34,6 +35,10 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)
+
+# SDK debug output can contain request headers. Keep credential traffic private.
+for sdk_logger in ('google.genai', 'openai', 'anthropic', 'httpx', 'httpcore'):
+    logging.getLogger(sdk_logger).setLevel(logging.WARNING)
 
 
 @asynccontextmanager
@@ -98,6 +103,17 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
 )
+
+# FastAPI's default validation response includes rejected raw input values.
+from fastapi.exceptions import RequestValidationError
+from fastapi.exception_handlers import request_validation_exception_handler
+
+
+@app.exception_handler(RequestValidationError)
+async def protected_validation(request, exc):
+    if request.url.path.startswith(f'{settings.API_V1_PREFIX}/ai-providers'):
+        return JSONResponse(status_code=422, content={'detail': 'Invalid provider or key input. Choose a supported provider and enter a key between 8 and 512 characters.'})
+    return await request_validation_exception_handler(request, exc)
 
 # Configure CORS
 app.add_middleware(
@@ -166,6 +182,7 @@ async def liveness():
 
 
 # Include API routers
+app.include_router(ai_providers_router, prefix=settings.API_V1_PREFIX)
 app.include_router(account_security_router, prefix=f"{settings.API_V1_PREFIX}/auth", tags=['Authentication'])
 
 app.include_router(

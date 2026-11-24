@@ -10,6 +10,7 @@ from app.core.config import settings
 # Create async engine
 engine_kwargs = {
     "echo": settings.DEBUG,
+    "hide_parameters": True,
 }
 
 # Add pooling only for PostgreSQL

@@ -22,3 +22,6 @@ openai>=1.60,<2
 anthropic>=0.45,<1
 
 alembic>=1.14,<2
+
+# Authenticated encryption for personal AI credentials.
+cryptography>=43,<47

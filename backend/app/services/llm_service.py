@@ -129,7 +129,7 @@ class OpenAIProvider(BaseLLMProvider):
             return response.choices[0].message.content
         
         except Exception as e:
-            logger.error(f"OpenAI generation error: {e}")
+            logger.error("OpenAI generation failed")
             raise
     
     async def stream_generate(
@@ -157,7 +157,7 @@ class OpenAIProvider(BaseLLMProvider):
                     yield chunk.choices[0].delta.content
         
         except Exception as e:
-            logger.error(f"OpenAI streaming error: {e}")
+            logger.error("OpenAI streaming failed")
             raise
 
 
@@ -193,7 +193,7 @@ class AnthropicProvider(BaseLLMProvider):
             return response.content[0].text
         
         except Exception as e:
-            logger.error(f"Anthropic generation error: {e}")
+            logger.error("Anthropic generation failed")
             raise
     
     async def stream_generate(
@@ -216,7 +216,7 @@ class AnthropicProvider(BaseLLMProvider):
                     yield text
         
         except Exception as e:
-            logger.error(f"Anthropic streaming error: {e}")
+            logger.error("Anthropic streaming failed")
             raise
 
 

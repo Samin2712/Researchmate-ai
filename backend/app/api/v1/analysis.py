@@ -24,17 +24,18 @@ from app.services.analysis_service import AnalysisService
 router = APIRouter(prefix="/analysis", tags=["analysis"])
 
 
-def get_analysis_service(db: AsyncSession = Depends(get_db)) -> AnalysisService:
-    from app.services.llm_service import llm_service
-    return AnalysisService(db, llm_service)
+async def get_analysis_service(db: AsyncSession = Depends(get_db),
+                               user: User = Depends(get_current_user)) -> AnalysisService:
+    from app.services.ai_credentials import resolve_llm
+    return AnalysisService(db, await resolve_llm(db, user.id))
 
 
-async def execute_analysis(run_id: int, user_id: int):
+async def execute_analysis(run_id: int, user_id: int, request_llm=None):
     # A worker owns its session, independently of the completed HTTP request.
     from app.core.database import AsyncSessionLocal
     from app.services.llm_service import llm_service
     async with AsyncSessionLocal() as db:
-        service = AnalysisService(db, llm_service)
+        service = AnalysisService(db, request_llm or llm_service)
         run = await service.get_run(run_id, user_id)
         if run and run.status == AnalysisStatus.PENDING:
             await service.run_analysis(run)
@@ -51,7 +52,7 @@ async def create_analysis_run(
         run = await service.create_run(current_user.id, request.kind,
             request.document_ids, request.parameters, force=request.force)
         if run.status == AnalysisStatus.PENDING:
-            background_tasks.add_task(execute_analysis, run.id, current_user.id)
+            background_tasks.add_task(execute_analysis, run.id, current_user.id, service.llm)
         return AnalysisRunResponse.model_validate(run)
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc

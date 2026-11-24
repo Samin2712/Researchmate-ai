@@ -21,7 +21,8 @@ class RAGEngine:
     Answers questions by retrieving relevant context and generating responses
     """
 
-    def __init__(self):
+    def __init__(self, llm=None):
+        self.llm = llm
         self.system_prompt = self._build_system_prompt()
 
     def _build_system_prompt(self) -> str:
@@ -267,7 +268,7 @@ Remember: Your answers should be trustworthy, verifiable, and helpful for academ
             # Step 4: Generate answer
             logger.info(f"💬 Generating answer (mode: {explanation_mode}) for: {question[:100]}...")
 
-            answer = await llm_service.generate(
+            answer = await (self.llm or llm_service).generate(
                 prompt=prompt,
                 system_prompt=self.system_prompt,
                 temperature=0.7,
@@ -286,7 +287,7 @@ Remember: Your answers should be trustworthy, verifiable, and helpful for academ
                 "confidence": confidence,
                 "chunks_retrieved": len(chunks),
                 "explanation_mode": explanation_mode,
-                "provider": llm_service.get_provider_info()['provider']
+                "provider": (self.llm or llm_service).get_provider_info()['provider']
             }
 
         except Exception as e:
@@ -343,7 +344,7 @@ Remember: Your answers should be trustworthy, verifiable, and helpful for academ
 
             # Step 3: Stream answer
             full_answer = ""
-            async for chunk in llm_service.stream_generate(
+            async for chunk in (self.llm or llm_service).stream_generate(
                 prompt=prompt,
                 system_prompt=self.system_prompt,
                 temperature=0.7,

@@ -7,6 +7,7 @@ import { authService } from '../services/authService'
 import { toast } from '../store/toasts'
 import { Link } from 'react-router-dom'
 import { errorMessage } from '../services/api'
+import AIProviders from '../components/shared/AIProviders'
 
 export default function Settings() {
   const { data: user } = useUser()
@@ -106,6 +107,7 @@ export default function Settings() {
           </label>
         </div>
       </section>
+      {user && <AIProviders key={user.id} />}
       <section className="settings-section">
         <h2>Motion preferences</h2>
         <label className="setting-row" htmlFor="reduce-motion">

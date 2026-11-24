@@ -171,7 +171,8 @@ async def test_start_status_api_and_cancellation_during_extraction(client, test_
     from app.api.v1 import analysis as api
     service, llm, docs, user, headers, other = analysis_fixture
     app.dependency_overrides[api.get_analysis_service] = lambda: service
-    async def worker(run_id, user_id):
+    async def worker(run_id, user_id, request_llm):
+        assert request_llm is llm
         run = await service.get_run(run_id, user_id)
         await service.run_comparison(run)
     monkeypatch.setattr(api, 'execute_analysis', worker)

@@ -52,6 +52,7 @@ class Settings(BaseSettings):
     
     # JWT
     SECRET_KEY: str = "your-secret-key-change-in-production"
+    AI_KEY_ENCRYPTION_SECRET: Optional[str] = Field(default=None, repr=False)
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
@@ -90,7 +91,7 @@ class Settings(BaseSettings):
     
     # Anthropic (Optional)
     ANTHROPIC_API_KEY: Optional[str] = None
-    ANTHROPIC_MODEL: str = "claude-3-haiku-20240307"
+    ANTHROPIC_MODEL: str = "claude-haiku-4-5"
     
     # Embedding Model (runs locally - FREE)
     EMBEDDING_MODEL: str = "sentence-transformers/all-MiniLM-L6-v2"
